@@ -6,6 +6,7 @@ short description.
 
 ## 2026-09-26
 
+- 22:44 — Fix map tiles 404ing in production: the nginx `.png` static-file regex location was catching `/api/tiles/*.png` ahead of the `/api/` proxy; made the proxy location `^~` so API paths always reach the backend.
 - 22:45 — Returning users who never made the location choice now see onboarding once more to pick "Use my location" or a spot on the map (previously they silently kept location on).
 - 22:30 — Location sharing is now optional. Onboarding offers "Use my location" or "Pick a spot on the map instead" (the map picker); without location, distances are measured from the picked spot (stored as `sb_spot`, falling back to downtown Seattle). A new map button re-picks the spot; the locate button opts in to geolocation; the Add form's "Use my current location" now opts in and fills once the location arrives. A failed/denied lookup turns the opt-in back off with a toast. Existing users who started before this see onboarding once more to make the location choice.
 
