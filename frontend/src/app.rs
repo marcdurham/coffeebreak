@@ -127,15 +127,17 @@ fn set_use_location(state: &UseStateHandle<bool>, on: bool) {
 #[function_component(App)]
 pub fn app() -> Html {
     let device = use_memo((), |()| device_id());
-    let started = use_state(|| LocalStorage::get::<bool>("sb_started").unwrap_or(false));
     // Whether the user opted in to browser geolocation. Location is
     // optional: without it, distances are measured from a spot they point
-    // to on the map (`sb_spot`). Visitors who started before it became
-    // optional already granted it, so they default to on.
-    let use_location = use_state(|| {
-        LocalStorage::get::<bool>("sb_use_location")
-            .unwrap_or_else(|_| LocalStorage::get::<bool>("sb_started").unwrap_or(false))
+    // to on the map (`sb_spot`).
+    let location_choice = LocalStorage::get::<bool>("sb_use_location").ok();
+    // Past onboarding and the location choice. Visitors who started before
+    // location became optional never made that choice, so they see
+    // onboarding once more to make it.
+    let started = use_state(|| {
+        LocalStorage::get::<bool>("sb_started").unwrap_or(false) && location_choice.is_some()
     });
+    let use_location = use_state(|| location_choice.unwrap_or(false));
     // Whether the "Set your spot" map picker is open.
     let picking_spot = use_state(|| false);
     let route = use_route::<Route>().unwrap_or(Route::Map);
