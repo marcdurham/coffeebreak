@@ -4,6 +4,10 @@ All notable changes to this project are logged here as they happen.
 Newest entries at the top. Format: `YYYY-MM-DD HH:MM` (local time) —
 short description.
 
+## 2026-09-26
+
+- 17:24 — Rename the app from Service Break to Coffee Breaks in all user-facing text (page title, PWA manifest, onboarding, share/invite text, admin backup filename) and docs; example domain is now coffeebreaks.fyi. Internal names (DB, containers, crates) unchanged.
+
 ## 2026-07-19
 
 - 14:39 — Extended the OpenObserve logging from earlier today with four more event types: review creation (with clean/coffee/food scores), admin actions (backup export/import with row counts, user edits listing which fields changed, user deletion), invite issuance and redemption (the invite code now appears on both the issuing and the registering log line), and a brute-force signal — `db::count_recent_failed_logins` checks an account's `user_activity` history after each failed login and logs a warning once 5 failures land within 15 minutes. Verified end-to-end against a real OpenObserve container (queried `_search` and confirmed all four new event types and their fields).

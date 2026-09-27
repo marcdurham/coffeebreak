@@ -2,8 +2,8 @@ use shared::{Amenity, OverpassPoi, PlaceSource, PlaceSummary, PlacesQuery};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::components::ui::{self, FilterChips, PlaceCard};
 use crate::api;
+use crate::components::ui::{self, FilterChips, PlaceCard};
 
 #[derive(Properties, PartialEq)]
 pub struct ListViewProps {
@@ -108,11 +108,20 @@ pub fn list_view(props: &ListViewProps) -> Html {
     } else {
         (
             props.places.clone(),
-            if props.show_unvisited { props.overpass_places.clone() } else { Vec::new() },
+            if props.show_unvisited {
+                props.overpass_places.clone()
+            } else {
+                Vec::new()
+            },
         )
     };
     let is_empty = places.is_empty() && overpass_places.is_empty();
-    let cards = merged_cards(&places, &overpass_places, &props.on_open, &props.on_open_poi);
+    let cards = merged_cards(
+        &places,
+        &overpass_places,
+        &props.on_open,
+        &props.on_open_poi,
+    );
 
     html! {
         <div class="screen sb-scroll">
@@ -185,9 +194,11 @@ fn merged_cards(
             (p.distance_mi.unwrap_or(f64::MAX), html)
         })
         .collect();
-    cards.extend(overpass_places.iter().map(|p| {
-        (p.distance_mi.unwrap_or(f64::MAX), poi_card(p, on_open_poi))
-    }));
+    cards.extend(
+        overpass_places
+            .iter()
+            .map(|p| (p.distance_mi.unwrap_or(f64::MAX), poi_card(p, on_open_poi))),
+    );
     cards.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
     cards.into_iter().map(|(_, html)| html).collect()
 }

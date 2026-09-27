@@ -1,4 +1,4 @@
-# Service Break — agent instructions
+# Coffee Breaks — agent instructions
 
 ## What this is
 

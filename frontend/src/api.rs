@@ -3,10 +3,10 @@
 use gloo_net::http::{Request, RequestBuilder, Response};
 use gloo_storage::{LocalStorage, SessionStorage, Storage};
 use shared::{
-    encode_query_component, ActivityEntry, AuthSession, ChangePassword, Credentials,
-    ImportSummary, Invitation, InviteNameUpdate, InvitesOverview, MapsLinkResult, NewInvite,
-    NewPlace, NewReview, OverpassPoi, OverpassQuery, PlaceDetail, PlaceEdit, PlaceSummary,
-    PlacesQuery, PromotePoi, SetPassword, UpdatePlace, UpdateProfile, UserSummary,
+    encode_query_component, ActivityEntry, AuthSession, ChangePassword, Credentials, ImportSummary,
+    Invitation, InviteNameUpdate, InvitesOverview, MapsLinkResult, NewInvite, NewPlace, NewReview,
+    OverpassPoi, OverpassQuery, PlaceDetail, PlaceEdit, PlaceSummary, PlacesQuery, PromotePoi,
+    SetPassword, UpdatePlace, UpdateProfile, UserSummary,
 };
 use uuid::Uuid;
 
@@ -59,7 +59,13 @@ pub async fn fetch_places(q: &PlacesQuery) -> ApiResult<Vec<PlaceSummary>> {
     } else {
         format!("/api/places?{qs}")
     };
-    Request::get(&url).send().await.map_err(err)?.json().await.map_err(err)
+    Request::get(&url)
+        .send()
+        .await
+        .map_err(err)?
+        .json()
+        .await
+        .map_err(err)
 }
 
 /// Overpass POIs (raw OpenStreetMap data, not yet in the app) within a map
@@ -67,13 +73,22 @@ pub async fn fetch_places(q: &PlacesQuery) -> ApiResult<Vec<PlaceSummary>> {
 /// caller decides whether to fetch at all).
 pub async fn fetch_overpass_pois(q: &OverpassQuery) -> ApiResult<Vec<OverpassPoi>> {
     let url = format!("/api/overpass/places?{}", q.to_query_string());
-    Request::get(&url).send().await.map_err(err)?.json().await.map_err(err)
+    Request::get(&url)
+        .send()
+        .await
+        .map_err(err)?
+        .json()
+        .await
+        .map_err(err)
 }
 
 /// Promotes an Overpass POI into a normal app place — the first time a user
 /// saves, rates, or edits one. Idempotent on the backend.
 pub async fn promote_overpass_poi(poi_id: &str, device_id: &str) -> ApiResult<PlaceDetail> {
-    let body = PromotePoi { poi_id: poi_id.to_owned(), device_id: device_id.to_owned() };
+    let body = PromotePoi {
+        poi_id: poi_id.to_owned(),
+        device_id: device_id.to_owned(),
+    };
     let res = with_auth(Request::post("/api/overpass/places/promote"))
         .json(&body)
         .map_err(err)?
@@ -90,7 +105,10 @@ pub async fn promote_overpass_poi(poi_id: &str, device_id: &str) -> ApiResult<Pl
 /// prefilling the "Add a place" form.
 pub async fn resolve_maps_link(url: &str) -> ApiResult<MapsLinkResult> {
     let qs = encode_query_component(url);
-    let res = Request::get(&format!("/api/maps-link?url={qs}")).send().await.map_err(err)?;
+    let res = Request::get(&format!("/api/maps-link?url={qs}"))
+        .send()
+        .await
+        .map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, "could not read that link").await);
     }
@@ -99,7 +117,13 @@ pub async fn resolve_maps_link(url: &str) -> ApiResult<MapsLinkResult> {
 
 pub async fn fetch_place(id: Uuid, origin: Option<(f64, f64)>) -> ApiResult<PlaceDetail> {
     let url = format!("/api/places/{id}{}", origin_qs(origin));
-    Request::get(&url).send().await.map_err(err)?.json().await.map_err(err)
+    Request::get(&url)
+        .send()
+        .await
+        .map_err(err)?
+        .json()
+        .await
+        .map_err(err)
 }
 
 pub async fn create_place(new: &NewPlace) -> ApiResult<PlaceDetail> {
@@ -142,7 +166,13 @@ pub async fn update_place(place_id: Uuid, update: &UpdatePlace) -> ApiResult<Pla
 /// The audit log of edits to a place, most recent first.
 pub async fn fetch_place_edits(place_id: Uuid) -> ApiResult<Vec<PlaceEdit>> {
     let url = format!("/api/places/{place_id}/edits");
-    Request::get(&url).send().await.map_err(err)?.json().await.map_err(err)
+    Request::get(&url)
+        .send()
+        .await
+        .map_err(err)?
+        .json()
+        .await
+        .map_err(err)
 }
 
 pub async fn create_review(place_id: Uuid, review: &NewReview) -> ApiResult<PlaceDetail> {
@@ -163,14 +193,22 @@ pub async fn fetch_saved(
     origin: Option<(f64, f64)>,
 ) -> ApiResult<Vec<PlaceSummary>> {
     let url = format!("/api/devices/{device_id}/saved{}", origin_qs(origin));
-    Request::get(&url).send().await.map_err(err)?.json().await.map_err(err)
+    Request::get(&url)
+        .send()
+        .await
+        .map_err(err)?
+        .json()
+        .await
+        .map_err(err)
 }
 
 pub async fn save_place(device_id: &str, place_id: Uuid) -> ApiResult<()> {
-    let res = with_auth(Request::put(&format!("/api/devices/{device_id}/saved/{place_id}")))
-        .send()
-        .await
-        .map_err(err)?;
+    let res = with_auth(Request::put(&format!(
+        "/api/devices/{device_id}/saved/{place_id}"
+    )))
+    .send()
+    .await
+    .map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, "could not save place").await);
     }
@@ -178,10 +216,12 @@ pub async fn save_place(device_id: &str, place_id: Uuid) -> ApiResult<()> {
 }
 
 pub async fn unsave_place(device_id: &str, place_id: Uuid) -> ApiResult<()> {
-    let res = with_auth(Request::delete(&format!("/api/devices/{device_id}/saved/{place_id}")))
-        .send()
-        .await
-        .map_err(err)?;
+    let res = with_auth(Request::delete(&format!(
+        "/api/devices/{device_id}/saved/{place_id}"
+    )))
+    .send()
+    .await
+    .map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, "could not remove place").await);
     }
@@ -238,7 +278,12 @@ pub async fn login(creds: &Credentials) -> ApiResult<AuthSession> {
 }
 
 async fn auth_request(url: &str, creds: &Credentials, fallback: &str) -> ApiResult<AuthSession> {
-    let res = Request::post(url).json(creds).map_err(err)?.send().await.map_err(err)?;
+    let res = Request::post(url)
+        .json(creds)
+        .map_err(err)?
+        .send()
+        .await
+        .map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, fallback).await);
     }
@@ -246,7 +291,9 @@ async fn auth_request(url: &str, creds: &Credentials, fallback: &str) -> ApiResu
 }
 
 pub async fn create_invite(name: &str) -> ApiResult<Invitation> {
-    let body = NewInvite { name: name.to_owned() };
+    let body = NewInvite {
+        name: name.to_owned(),
+    };
     let res = with_auth(Request::post("/api/invites"))
         .json(&body)
         .map_err(err)?
@@ -260,7 +307,10 @@ pub async fn create_invite(name: &str) -> ApiResult<Invitation> {
 }
 
 pub async fn list_invites() -> ApiResult<InvitesOverview> {
-    let res = with_auth(Request::get("/api/invites")).send().await.map_err(err)?;
+    let res = with_auth(Request::get("/api/invites"))
+        .send()
+        .await
+        .map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, "could not load invite codes").await);
     }
@@ -271,8 +321,15 @@ pub async fn list_invites() -> ApiResult<InvitesOverview> {
 /// joined with.
 pub async fn rename_invite(code: &str, name: &str) -> ApiResult<()> {
     let url = format!("/api/invites/{}/name", encode_query_component(code));
-    let body = InviteNameUpdate { name: name.to_owned() };
-    let res = with_auth(Request::put(&url)).json(&body).map_err(err)?.send().await.map_err(err)?;
+    let body = InviteNameUpdate {
+        name: name.to_owned(),
+    };
+    let res = with_auth(Request::put(&url))
+        .json(&body)
+        .map_err(err)?
+        .send()
+        .await
+        .map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, "could not update the name").await);
     }
@@ -284,10 +341,7 @@ pub async fn rename_invite(code: &str, name: &str) -> ApiResult<()> {
 /// inviter can act on their own codes.
 pub async fn revoke_invite(code: &str) -> ApiResult<()> {
     let url = format!("/api/invites/{}", encode_query_component(code));
-    let res = with_auth(Request::delete(&url))
-        .send()
-        .await
-        .map_err(err)?;
+    let res = with_auth(Request::delete(&url)).send().await.map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, "could not remove the invitation").await);
     }
@@ -313,7 +367,9 @@ pub async fn change_password(creds: &ChangePassword) -> ApiResult<()> {
 /// account) — the "vice versa" of linking Google onto a password account.
 pub async fn set_password(new_password: &str) -> ApiResult<()> {
     let res = with_auth(Request::post("/api/auth/password/set"))
-        .json(&SetPassword { new_password: new_password.to_owned() })
+        .json(&SetPassword {
+            new_password: new_password.to_owned(),
+        })
         .map_err(err)?
         .send()
         .await
@@ -375,7 +431,10 @@ pub async fn update_profile(profile: &UpdateProfile) -> ApiResult<()> {
 /// The signed-in user's own activity log — logins, failed logins, profile
 /// changes, place edits and ratings, newest first.
 pub async fn fetch_my_activity() -> ApiResult<Vec<ActivityEntry>> {
-    let res = with_auth(Request::get("/api/auth/activity")).send().await.map_err(err)?;
+    let res = with_auth(Request::get("/api/auth/activity"))
+        .send()
+        .await
+        .map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, "could not load activity").await);
     }
@@ -403,14 +462,20 @@ pub async fn logout() {
 /// valid session, `Ok(false)` if the server rejected it, `Err` if the
 /// check itself failed (e.g. offline) and nothing should be concluded.
 pub async fn session_is_valid() -> ApiResult<bool> {
-    let res = with_auth(Request::get("/api/auth/me")).send().await.map_err(err)?;
+    let res = with_auth(Request::get("/api/auth/me"))
+        .send()
+        .await
+        .map_err(err)?;
     Ok(res.status() < 400)
 }
 
 /// Returns the signed-in user's profile (username, admin flag, given/family
 /// name) from `GET /api/auth/me`.
 pub async fn get_me() -> ApiResult<serde_json::Value> {
-    let res = with_auth(Request::get("/api/auth/me")).send().await.map_err(err)?;
+    let res = with_auth(Request::get("/api/auth/me"))
+        .send()
+        .await
+        .map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, "could not load profile").await);
     }
@@ -420,7 +485,10 @@ pub async fn get_me() -> ApiResult<serde_json::Value> {
 /// Downloads the full-data backup (admin only) as raw JSON text, kept
 /// opaque so it can be saved to a file untouched.
 pub async fn export_backup() -> ApiResult<String> {
-    let res = with_auth(Request::get("/api/admin/export")).send().await.map_err(err)?;
+    let res = with_auth(Request::get("/api/admin/export"))
+        .send()
+        .await
+        .map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, "could not export data").await);
     }
@@ -430,7 +498,10 @@ pub async fn export_backup() -> ApiResult<String> {
 /// All accounts — admin only. Ids are returned as strings so the frontend
 /// doesn't need to pull in uuid for a read-only listing.
 pub async fn fetch_users() -> ApiResult<Vec<UserSummary>> {
-    let res = with_auth(Request::get("/api/admin/users")).send().await.map_err(err)?;
+    let res = with_auth(Request::get("/api/admin/users"))
+        .send()
+        .await
+        .map_err(err)?;
     if res.status() >= 400 {
         return Err(error_message(res, "could not load users").await);
     }

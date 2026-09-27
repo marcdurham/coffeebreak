@@ -557,7 +557,7 @@ input,textarea,button{font-family:inherit}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:393,&quot;height&quot;:852},&quot;appName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Service Break&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;onboarding&quot;,&quot;map&quot;],&quot;default&quot;:&quot;onboarding&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;sortBy&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;distance&quot;,&quot;cleanliness&quot;],&quot;default&quot;:&quot;distance&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;unit&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;mi&quot;,&quot;km&quot;],&quot;default&quot;:&quot;mi&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:393,&quot;height&quot;:852},&quot;appName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Coffee Breaks&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;onboarding&quot;,&quot;map&quot;],&quot;default&quot;:&quot;onboarding&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;sortBy&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;distance&quot;,&quot;cleanliness&quot;],&quot;default&quot;:&quot;distance&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;unit&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;mi&quot;,&quot;km&quot;],&quot;default&quot;:&quot;mi&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
 class Component extends DCLogic {
   constructor(props) {
     super(props);
@@ -668,7 +668,7 @@ class Component extends DCLogic {
   openApple = () => { const p = this.selectedPlace(); if (p) window.open('https://maps.apple.com/?daddr=' + this.destUrl(p), '_blank'); this.setState({ overlay: null }); this.toast('Opening Apple Maps…'); };
   copyAddress = () => { const p = this.selectedPlace(); if (p && navigator.clipboard) navigator.clipboard.writeText(p.name + ', ' + p.address).catch(()=>{}); this.setState({ overlay: null }); this.toast('Address copied'); };
   copyCode = () => { if (navigator.clipboard) navigator.clipboard.writeText('BREAK-JV7').catch(()=>{}); this.toast('Invite code copied'); };
-  shareInvite = () => { if (navigator.share) navigator.share({ title: 'Service Break', text: 'Join me on Service Break — code BREAK-JV7' }).catch(()=>{}); else this.toast('Invite link copied'); };
+  shareInvite = () => { if (navigator.share) navigator.share({ title: 'Coffee Breaks', text: 'Join me on Coffee Breaks — code BREAK-JV7' }).catch(()=>{}); else this.toast('Invite link copied'); };
 
   // form
   onName = (e) => { const form = Object.assign({}, this.state.form, { name: e.target.value }); this.setState({ form }); };
@@ -827,7 +827,7 @@ class Component extends DCLogic {
     const filtersActive = s.filters.cleanOnly || s.filters.parking || s.filters.openNow || s.filters.noPurchase || Object.keys(s.filters.types).length > 0;
 
     return {
-      appName: this.props.appName ?? 'Service Break',
+      appName: this.props.appName ?? 'Coffee Breaks',
       notStarted: !s.started, started: s.started,
       chromeInk: s.started && s.tab === 'map' && !s.overlay ? '#2c211a' : '#2c211a',
       isMap: s.tab === 'map', isList: s.tab === 'list', isAdd: s.tab === 'add', isSaved: s.tab === 'saved', isProfile: s.tab === 'profile',

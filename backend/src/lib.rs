@@ -1,4 +1,4 @@
-//! Service Break API: places with rated bathrooms, reviews, and saved lists.
+//! Coffee Breaks API: places with rated bathrooms, reviews, and saved lists.
 
 pub mod admin;
 pub mod auth;
@@ -34,7 +34,11 @@ pub const DEFAULT_TILE_URL: &str = "https://tile.openstreetmap.org";
 /// HTTP client with the User-Agent required by the Nominatim usage policy.
 pub fn http_client() -> reqwest::Client {
     reqwest::Client::builder()
-        .user_agent(concat!("service-break/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!(
+            "coffee-breaks/",
+            env!("CARGO_PKG_VERSION"),
+            " (+https://coffeebreaks.fyi)"
+        ))
         .build()
         .unwrap_or_default()
 }

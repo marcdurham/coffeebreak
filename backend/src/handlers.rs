@@ -2,7 +2,9 @@ use actix_web::web::{Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, HttpResponse};
 use serde::Deserialize;
 use serde_json::json;
-use shared::{parse_latlng, BBox, NewPlace, NewReview, PlaceSource, PlacesQuery, PromotePoi, UpdatePlace};
+use shared::{
+    parse_latlng, BBox, NewPlace, NewReview, PlaceSource, PlacesQuery, PromotePoi, UpdatePlace,
+};
 use uuid::Uuid;
 
 use crate::auth::AuthUser;
@@ -57,10 +59,16 @@ async fn health() -> HttpResponse {
 /// Rejects aspect scores outside 1-5. `clean` is required; `coffee` and
 /// `food` are optional but must be in range when present.
 fn validate_scores(clean: i16, coffee: Option<i16>, food: Option<i16>) -> Result<(), ApiError> {
-    for (name, score) in [("cleanliness", Some(clean)), ("coffee", coffee), ("food", food)] {
+    for (name, score) in [
+        ("cleanliness", Some(clean)),
+        ("coffee", coffee),
+        ("food", food),
+    ] {
         if let Some(s) = score {
             if !(1..=5).contains(&s) {
-                return Err(ApiError::BadRequest(format!("{name} must be between 1 and 5")));
+                return Err(ApiError::BadRequest(format!(
+                    "{name} must be between 1 and 5"
+                )));
             }
         }
     }
@@ -207,7 +215,10 @@ async fn update_place(
         purchase_required: up.purchase_required,
         code_required: up.code_required,
         amenities: up.amenities.clone(),
-        hours: up.hours.map(|h| h.trim().to_owned()).filter(|h| !h.is_empty()),
+        hours: up
+            .hours
+            .map(|h| h.trim().to_owned())
+            .filter(|h| !h.is_empty()),
     };
     let place_id = *id;
     db::update_place(&state.pool, place_id, user.id, &fields).await?;
@@ -234,10 +245,7 @@ async fn delete_place(
 /// A place's edit history — who changed which field, from and to what,
 /// and when. Public, like all reads.
 #[get("/api/places/{id}/edits")]
-async fn list_place_edits(
-    state: Data<AppState>,
-    id: Path<Uuid>,
-) -> Result<HttpResponse, ApiError> {
+async fn list_place_edits(state: Data<AppState>, id: Path<Uuid>) -> Result<HttpResponse, ApiError> {
     let edits = db::list_place_edits(&state.pool, *id).await?;
     Ok(HttpResponse::Ok().json(edits))
 }
@@ -396,5 +404,10 @@ async fn promote_overpass_poi(
     };
     let (id, created) = db::promote_overpass_poi(&state.pool, &body.poi_id, &insert).await?;
     let detail = db::get_place(&state.pool, id, None).await?;
-    Ok(if created { HttpResponse::Created() } else { HttpResponse::Ok() }.json(detail))
+    Ok(if created {
+        HttpResponse::Created()
+    } else {
+        HttpResponse::Ok()
+    }
+    .json(detail))
 }

@@ -56,7 +56,7 @@ pub fn admin_view(props: &AdminViewProps) -> Html {
             wasm_bindgen_futures::spawn_local(async move {
                 match api::export_backup().await {
                     Ok(json) => {
-                        glue::sb_download("service-break-backup.json", &json);
+                        glue::sb_download("coffee-breaks-backup.json", &json);
                         on_toast.emit("Backup downloaded".to_owned());
                     }
                     Err(msg) => on_toast.emit(msg),

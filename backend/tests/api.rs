@@ -22,13 +22,19 @@ use uuid::Uuid;
 /// A throwaway per-test tile cache directory. Not cleaned up afterwards
 /// (like the OS temp dir in general); tests leave at most a few KB behind.
 fn test_tile_dir() -> std::path::PathBuf {
-    std::env::temp_dir().join(format!("service-break-test-tiles-{}", Uuid::new_v4().simple()))
+    std::env::temp_dir().join(format!(
+        "service-break-test-tiles-{}",
+        Uuid::new_v4().simple()
+    ))
 }
 
 async fn app(
     pool: PgPool,
-) -> impl Service<actix_http::Request, Response = ServiceResponse<impl MessageBody>, Error = actix_web::Error>
-{
+) -> impl Service<
+    actix_http::Request,
+    Response = ServiceResponse<impl MessageBody>,
+    Error = actix_web::Error,
+> {
     app_with_tile_dir(pool, test_tile_dir()).await
 }
 
@@ -37,8 +43,11 @@ async fn app(
 async fn app_with_tile_dir(
     pool: PgPool,
     tile_dir: std::path::PathBuf,
-) -> impl Service<actix_http::Request, Response = ServiceResponse<impl MessageBody>, Error = actix_web::Error>
-{
+) -> impl Service<
+    actix_http::Request,
+    Response = ServiceResponse<impl MessageBody>,
+    Error = actix_web::Error,
+> {
     let state = Data::new(AppState {
         pool,
         http: http_client(),
@@ -60,8 +69,11 @@ async fn app_with_tile_dir(
 /// that don't require a live round trip to Google itself.
 async fn app_with_google(
     pool: PgPool,
-) -> impl Service<actix_http::Request, Response = ServiceResponse<impl MessageBody>, Error = actix_web::Error>
-{
+) -> impl Service<
+    actix_http::Request,
+    Response = ServiceResponse<impl MessageBody>,
+    Error = actix_web::Error,
+> {
     let state = Data::new(AppState {
         pool,
         http: http_client(),
@@ -304,12 +316,16 @@ async fn list_filters_by_type_and_purchase(pool: PgPool) {
         assert_eq!(call_service(&app, req).await.status(), StatusCode::CREATED);
     }
 
-    let req = TestRequest::get().uri("/api/places?types=park").to_request();
+    let req = TestRequest::get()
+        .uri("/api/places?types=park")
+        .to_request();
     let places: Vec<PlaceSummary> = read_body_json(call_service(&app, req).await).await;
     assert_eq!(places.len(), 1);
     assert_eq!(places[0].place_type, PlaceType::Park);
 
-    let req = TestRequest::get().uri("/api/places?no_purchase=true").to_request();
+    let req = TestRequest::get()
+        .uri("/api/places?no_purchase=true")
+        .to_request();
     let places: Vec<PlaceSummary> = read_body_json(call_service(&app, req).await).await;
     assert_eq!(places.len(), 1);
     assert_eq!(places[0].name, "Elm Street Park");
@@ -335,7 +351,9 @@ async fn list_filters_by_offered_amenities(pool: PgPool) {
     }
 
     // A single amenity narrows to places offering it.
-    let req = TestRequest::get().uri("/api/places?amenities=coffee").to_request();
+    let req = TestRequest::get()
+        .uri("/api/places?amenities=coffee")
+        .to_request();
     let places: Vec<PlaceSummary> = read_body_json(call_service(&app, req).await).await;
     assert_eq!(places.len(), 1);
     assert_eq!(places[0].name, "Camber Coffee");
@@ -344,11 +362,12 @@ async fn list_filters_by_offered_amenities(pool: PgPool) {
     let req = TestRequest::get()
         .uri("/api/places?amenities=coffee,seating")
         .to_request();
-    let mut names: Vec<String> = read_body_json::<Vec<PlaceSummary>, _>(call_service(&app, req).await)
-        .await
-        .into_iter()
-        .map(|p| p.name)
-        .collect();
+    let mut names: Vec<String> =
+        read_body_json::<Vec<PlaceSummary>, _>(call_service(&app, req).await)
+            .await
+            .into_iter()
+            .map(|p| p.name)
+            .collect();
     names.sort();
     assert_eq!(names, ["Camber Coffee", "Elm Street Park"]);
 
@@ -408,7 +427,10 @@ async fn review_updates_average_and_sorting_by_cleanliness(pool: PgPool) {
             .insert_header(auth(&other))
             .set_json(body)
             .to_request();
-        assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            call_service(&app, req).await.status(),
+            StatusCode::BAD_REQUEST
+        );
     }
 }
 
@@ -428,14 +450,21 @@ async fn saved_places_round_trip(pool: PgPool) {
         .uri(&format!("/api/devices/dev-a/saved/{id}"))
         .insert_header(auth(&token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
-    let req = TestRequest::get().uri("/api/devices/dev-a/saved").to_request();
+    let req = TestRequest::get()
+        .uri("/api/devices/dev-a/saved")
+        .to_request();
     let saved: Vec<PlaceSummary> = read_body_json(call_service(&app, req).await).await;
     assert_eq!(saved.len(), 1);
     assert_eq!(saved[0].id, id);
 
-    let req = TestRequest::get().uri("/api/devices/dev-b/saved").to_request();
+    let req = TestRequest::get()
+        .uri("/api/devices/dev-b/saved")
+        .to_request();
     let saved: Vec<PlaceSummary> = read_body_json(call_service(&app, req).await).await;
     assert!(saved.is_empty());
 
@@ -443,16 +472,26 @@ async fn saved_places_round_trip(pool: PgPool) {
         .uri(&format!("/api/devices/dev-a/saved/{id}"))
         .insert_header(auth(&token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
-    let req = TestRequest::get().uri("/api/devices/dev-a/saved").to_request();
+    let req = TestRequest::get()
+        .uri("/api/devices/dev-a/saved")
+        .to_request();
     let saved: Vec<PlaceSummary> = read_body_json(call_service(&app, req).await).await;
     assert!(saved.is_empty());
 }
 
 /// A small bbox used by the Overpass POI cache tests below.
 fn test_bbox() -> BBox {
-    BBox { min_lat: 47.60, min_lng: -122.35, max_lat: 47.62, max_lng: -122.32 }
+    BBox {
+        min_lat: 47.60,
+        min_lng: -122.35,
+        max_lat: 47.62,
+        max_lng: -122.32,
+    }
 }
 
 fn bbox_query_string(bbox: &BBox) -> String {
@@ -534,12 +573,19 @@ async fn stale_overpass_tiles_detects_missing_and_expired(pool: PgPool) {
 
     let mut stale = db::stale_overpass_tiles(
         &pool,
-        &["fresh_tile".to_owned(), "stale_tile".to_owned(), "missing_tile".to_owned()],
+        &[
+            "fresh_tile".to_owned(),
+            "stale_tile".to_owned(),
+            "missing_tile".to_owned(),
+        ],
     )
     .await
     .unwrap();
     stale.sort();
-    assert_eq!(stale, vec!["missing_tile".to_owned(), "stale_tile".to_owned()]);
+    assert_eq!(
+        stale,
+        vec!["missing_tile".to_owned(), "stale_tile".to_owned()]
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -557,14 +603,38 @@ async fn overpass_places_returns_only_in_bbox_unpromoted_pois(pool: PgPool) {
     let tile_ids = seed_fresh_tiles(&pool, &bbox).await;
     let tile_id = &tile_ids[0];
 
-    seed_overpass_poi(&pool, "node/1", tile_id, "Camber Coffee", PlaceType::Shop, 47.61, -122.34)
-        .await;
+    seed_overpass_poi(
+        &pool,
+        "node/1",
+        tile_id,
+        "Camber Coffee",
+        PlaceType::Shop,
+        47.61,
+        -122.34,
+    )
+    .await;
     // Outside the bbox.
-    seed_overpass_poi(&pool, "node/2", tile_id, "Far Away Park", PlaceType::Park, 48.0, -122.0)
-        .await;
+    seed_overpass_poi(
+        &pool,
+        "node/2",
+        tile_id,
+        "Far Away Park",
+        PlaceType::Park,
+        48.0,
+        -122.0,
+    )
+    .await;
     // Already promoted -- excluded even though it's in-bbox.
-    seed_overpass_poi(&pool, "node/3", tile_id, "Promoted Mall", PlaceType::Mall, 47.615, -122.33)
-        .await;
+    seed_overpass_poi(
+        &pool,
+        "node/3",
+        tile_id,
+        "Promoted Mall",
+        PlaceType::Mall,
+        47.615,
+        -122.33,
+    )
+    .await;
     sqlx::query("UPDATE overpass_pois SET app_place_id = $1 WHERE id = 'node/3'")
         .bind(created.summary.id)
         .execute(&pool)
@@ -572,7 +642,10 @@ async fn overpass_places_returns_only_in_bbox_unpromoted_pois(pool: PgPool) {
         .unwrap();
 
     let req = TestRequest::get()
-        .uri(&format!("/api/overpass/places?{}", bbox_query_string(&bbox)))
+        .uri(&format!(
+            "/api/overpass/places?{}",
+            bbox_query_string(&bbox)
+        ))
         .to_request();
     let res = call_service(&app, req).await;
     assert_eq!(res.status(), StatusCode::OK);
@@ -607,7 +680,10 @@ async fn overpass_places_caps_at_250_nearest_to_center(pool: PgPool) {
     }
 
     let req = TestRequest::get()
-        .uri(&format!("/api/overpass/places?{}", bbox_query_string(&bbox)))
+        .uri(&format!(
+            "/api/overpass/places?{}",
+            bbox_query_string(&bbox)
+        ))
         .to_request();
     let pois: Vec<OverpassPoi> = read_body_json(call_service(&app, req).await).await;
     assert_eq!(pois.len(), 250);
@@ -625,8 +701,16 @@ async fn promote_overpass_poi_creates_place_links_cache_and_is_idempotent(pool: 
     let bbox = test_bbox();
     let tile_ids = seed_fresh_tiles(&pool, &bbox).await;
     let tile_id = &tile_ids[0];
-    seed_overpass_poi(&pool, "node/1", tile_id, "Camber Coffee", PlaceType::Shop, 47.61, -122.34)
-        .await;
+    seed_overpass_poi(
+        &pool,
+        "node/1",
+        tile_id,
+        "Camber Coffee",
+        PlaceType::Shop,
+        47.61,
+        -122.34,
+    )
+    .await;
 
     let req = TestRequest::post()
         .uri("/api/overpass/places/promote")
@@ -650,7 +734,10 @@ async fn promote_overpass_poi_creates_place_links_cache_and_is_idempotent(pool: 
     // Excluded from future Overpass results over the same bbox -- never
     // shown twice once promoted.
     let req = TestRequest::get()
-        .uri(&format!("/api/overpass/places?{}", bbox_query_string(&bbox)))
+        .uri(&format!(
+            "/api/overpass/places?{}",
+            bbox_query_string(&bbox)
+        ))
         .to_request();
     let pois: Vec<OverpassPoi> = read_body_json(call_service(&app, req).await).await;
     assert!(pois.is_empty());
@@ -667,10 +754,11 @@ async fn promote_overpass_poi_creates_place_links_cache_and_is_idempotent(pool: 
     let detail2: PlaceDetail = read_body_json(res).await;
     assert_eq!(detail2.summary.id, place_id);
 
-    let place_count: i64 = sqlx::query_scalar("SELECT count(*) FROM places WHERE name = 'Camber Coffee'")
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+    let place_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM places WHERE name = 'Camber Coffee'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
     assert_eq!(place_count, 1);
 }
 
@@ -696,7 +784,9 @@ async fn list_searches_name_and_address(pool: PgPool) {
     assert_eq!(places[0].name, "Camber Coffee");
 
     // Address match, URL-encoded.
-    let req = TestRequest::get().uri("/api/places?q=elm%20st").to_request();
+    let req = TestRequest::get()
+        .uri("/api/places?q=elm%20st")
+        .to_request();
     let places: Vec<PlaceSummary> = read_body_json(call_service(&app, req).await).await;
     assert_eq!(places.len(), 1);
     assert_eq!(places[0].name, "Elm Street Park");
@@ -717,7 +807,10 @@ async fn get_unknown_place_is_404(pool: PgPool) {
     let req = TestRequest::get()
         .uri("/api/places/00000000-0000-0000-0000-00000000dead")
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -729,7 +822,10 @@ async fn writes_require_login(pool: PgPool) {
         .uri("/api/places")
         .set_json(new_place_json("Sneaky Place"))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
     // A made-up token is just as unauthorized.
     let req = TestRequest::post()
@@ -737,17 +833,26 @@ async fn writes_require_login(pool: PgPool) {
         .insert_header(auth("not-a-real-token"))
         .set_json(json!({ "device_id": "dev-a", "clean": 4, "text": "" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
     let req = TestRequest::put()
         .uri("/api/devices/dev-a/saved/00000000-0000-0000-0000-00000000dead")
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
     let req = TestRequest::delete()
         .uri("/api/devices/dev-a/saved/00000000-0000-0000-0000-00000000dead")
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
     // Reads stay public.
     let req = TestRequest::get().uri("/api/places").to_request();
@@ -783,12 +888,18 @@ async fn register_login_logout_flow(pool: PgPool) {
         .uri("/api/auth/logout")
         .insert_header(auth(&session.token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
     let req = TestRequest::get()
         .uri("/api/auth/me")
         .insert_header(auth(&session.token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -801,7 +912,10 @@ async fn login_with_wrong_password_is_rejected(pool: PgPool) {
             .uri("/api/auth/login")
             .set_json(json!({ "username": username, "password": password }))
             .to_request();
-        assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(
+            call_service(&app, req).await.status(),
+            StatusCode::UNAUTHORIZED
+        );
     }
 }
 
@@ -825,8 +939,14 @@ async fn register_validates_input_and_rejects_taken_names(pool: PgPool) {
         json!({ "username": "has space", "password": TEST_PASSWORD }),
         json!({ "username": "fine-name", "password": "short" }),
     ] {
-        let req = TestRequest::post().uri("/api/auth/register").set_json(body).to_request();
-        assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+        let req = TestRequest::post()
+            .uri("/api/auth/register")
+            .set_json(body)
+            .to_request();
+        assert_eq!(
+            call_service(&app, req).await.status(),
+            StatusCode::BAD_REQUEST
+        );
     }
 }
 
@@ -839,7 +959,10 @@ async fn registration_requires_a_valid_invite_code(pool: PgPool) {
         .uri("/api/auth/register")
         .set_json(json!({ "username": "nobody-invited", "password": TEST_PASSWORD }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // A made-up code.
     let req = TestRequest::post()
@@ -850,7 +973,10 @@ async fn registration_requires_a_valid_invite_code(pool: PgPool) {
             "invite_code": "FAKE0001",
         }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // An expired (8-day-old) but otherwise valid, unredeemed code.
     let stale = seed_invite(&pool).await;
@@ -867,34 +993,48 @@ async fn registration_requires_a_valid_invite_code(pool: PgPool) {
             "invite_code": stale,
         }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // A real but already-redeemed code.
     let code = seed_invite(&pool).await;
     register(&app, &pool, "scout-one").await; // burns a different, freshly seeded code
     let req = TestRequest::post()
         .uri("/api/auth/register")
-        .set_json(json!({ "username": "scout-two", "password": TEST_PASSWORD, "invite_code": code }))
+        .set_json(
+            json!({ "username": "scout-two", "password": TEST_PASSWORD, "invite_code": code }),
+        )
         .to_request();
     assert_eq!(call_service(&app, req).await.status(), StatusCode::CREATED);
     let req = TestRequest::post()
         .uri("/api/auth/register")
-        .set_json(json!({ "username": "scout-three", "password": TEST_PASSWORD, "invite_code": code }))
+        .set_json(
+            json!({ "username": "scout-three", "password": TEST_PASSWORD, "invite_code": code }),
+        )
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
 async fn google_sign_in_disabled_by_default(pool: PgPool) {
     let app = app(pool.clone()).await;
 
-    let req = TestRequest::get().uri("/api/auth/google/enabled").to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/google/enabled")
+        .to_request();
     let res = call_service(&app, req).await;
     assert_eq!(res.status(), StatusCode::OK);
     let body: serde_json::Value = read_body_json(res).await;
     assert_eq!(body["enabled"], false);
 
-    let req = TestRequest::get().uri("/api/auth/google/start?mode=login").to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/google/start?mode=login")
+        .to_request();
     assert_eq!(
         call_service(&app, req).await.status(),
         StatusCode::SERVICE_UNAVAILABLE
@@ -905,31 +1045,47 @@ async fn google_sign_in_disabled_by_default(pool: PgPool) {
 async fn google_start_redirects_to_google_and_stores_state(pool: PgPool) {
     let app = app_with_google(pool.clone()).await;
 
-    let req = TestRequest::get().uri("/api/auth/google/enabled").to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/google/enabled")
+        .to_request();
     let body: serde_json::Value = read_body_json(call_service(&app, req).await).await;
     assert_eq!(body["enabled"], true);
 
-    let req = TestRequest::get().uri("/api/auth/google/start?mode=login").to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/google/start?mode=login")
+        .to_request();
     let res = call_service(&app, req).await;
     assert_eq!(res.status(), StatusCode::FOUND);
-    let location = res.headers().get("Location").unwrap().to_str().unwrap().to_owned();
+    let location = res
+        .headers()
+        .get("Location")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned();
     assert!(location.starts_with("https://accounts.google.com/o/oauth2/v2/auth?"));
     assert!(location.contains("client_id=test-client-id"));
-    assert!(location.contains(
-        "redirect_uri=http%3A%2F%2F127.0.0.1%3A8020%2Fapi%2Fauth%2Fgoogle%2Fcallback"
-    ));
+    assert!(location
+        .contains("redirect_uri=http%3A%2F%2F127.0.0.1%3A8020%2Fapi%2Fauth%2Fgoogle%2Fcallback"));
 
     // Exactly one single-use state row was stored for the round trip.
-    let count: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM oauth_states").fetch_one(&pool).await.unwrap();
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM oauth_states")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
     assert_eq!(count, 1);
 }
 
 #[sqlx::test(migrations = "./migrations")]
 async fn google_register_start_requires_an_invite_code(pool: PgPool) {
     let app = app_with_google(pool.clone()).await;
-    let req = TestRequest::get().uri("/api/auth/google/start?mode=register").to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    let req = TestRequest::get()
+        .uri("/api/auth/google/start?mode=register")
+        .to_request();
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -941,44 +1097,71 @@ async fn google_callback_rejects_unknown_or_replayed_state(pool: PgPool) {
         .to_request();
     let res = call_service(&app, req).await;
     assert_eq!(res.status(), StatusCode::FOUND);
-    let location = res.headers().get("Location").unwrap().to_str().unwrap().to_owned();
+    let location = res
+        .headers()
+        .get("Location")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned();
     assert!(location.starts_with("http://127.0.0.1:8020/oauth-complete#error="));
 }
 
 #[sqlx::test(migrations = "./migrations")]
 async fn google_callback_surfaces_denied_consent(pool: PgPool) {
     let app = app_with_google(pool.clone()).await;
-    let req =
-        TestRequest::get().uri("/api/auth/google/callback?error=access_denied").to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/google/callback?error=access_denied")
+        .to_request();
     let res = call_service(&app, req).await;
     assert_eq!(res.status(), StatusCode::FOUND);
-    let location = res.headers().get("Location").unwrap().to_str().unwrap().to_owned();
+    let location = res
+        .headers()
+        .get("Location")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_owned();
     assert!(location.starts_with("http://127.0.0.1:8020/oauth-complete#error="));
 }
 
 #[sqlx::test(migrations = "./migrations")]
 async fn oauth_state_round_trips_once_then_is_gone(pool: PgPool) {
-    backend::db::create_oauth_state(&pool, "state-once", "register", "INVITE1").await.unwrap();
+    backend::db::create_oauth_state(&pool, "state-once", "register", "INVITE1")
+        .await
+        .unwrap();
 
-    let (mode, invite, link_user_id) =
-        backend::db::take_oauth_state(&pool, "state-once").await.unwrap().unwrap();
+    let (mode, invite, link_user_id) = backend::db::take_oauth_state(&pool, "state-once")
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(mode, "register");
     assert_eq!(invite, "INVITE1");
     assert!(link_user_id.is_none());
 
     // Single-use: a replay of the same state finds nothing.
-    assert!(backend::db::take_oauth_state(&pool, "state-once").await.unwrap().is_none());
+    assert!(backend::db::take_oauth_state(&pool, "state-once")
+        .await
+        .unwrap()
+        .is_none());
 }
 
 #[sqlx::test(migrations = "./migrations")]
 async fn oauth_state_expires(pool: PgPool) {
-    backend::db::create_oauth_state(&pool, "state-old", "login", "").await.unwrap();
-    sqlx::query("UPDATE oauth_states SET expires_at = now() - interval '1 minute' WHERE state = $1")
-        .bind("state-old")
-        .execute(&pool)
+    backend::db::create_oauth_state(&pool, "state-old", "login", "")
         .await
         .unwrap();
-    assert!(backend::db::take_oauth_state(&pool, "state-old").await.unwrap().is_none());
+    sqlx::query(
+        "UPDATE oauth_states SET expires_at = now() - interval '1 minute' WHERE state = $1",
+    )
+    .bind("state-old")
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert!(backend::db::take_oauth_state(&pool, "state-old")
+        .await
+        .unwrap()
+        .is_none());
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -1021,16 +1204,10 @@ async fn upsert_google_user_disambiguates_username_collisions(pool: PgPool) {
         .unwrap();
 
     let code = seed_invite(&pool).await;
-    let (_, username, _) = backend::db::upsert_google_user(
-        &pool,
-        "google-sub-2",
-        "scout@example.com",
-        "",
-        "",
-        &code,
-    )
-    .await
-    .unwrap();
+    let (_, username, _) =
+        backend::db::upsert_google_user(&pool, "google-sub-2", "scout@example.com", "", "", &code)
+            .await
+            .unwrap();
     assert_eq!(username, "scout1");
 }
 
@@ -1051,81 +1228,82 @@ async fn upsert_google_user_requires_a_valid_invite_for_new_accounts(pool: PgPoo
 
 #[sqlx::test(migrations = "./migrations")]
 async fn find_user_by_google_sub_only_matches_linked_accounts(pool: PgPool) {
-    assert!(backend::db::find_user_by_google_sub(&pool, "nope").await.unwrap().is_none());
+    assert!(backend::db::find_user_by_google_sub(&pool, "nope")
+        .await
+        .unwrap()
+        .is_none());
 
     let code = seed_invite(&pool).await;
     backend::db::upsert_google_user(&pool, "sub-x", "x@example.com", "", "", &code)
         .await
         .unwrap();
-    assert!(backend::db::find_user_by_google_sub(&pool, "sub-x").await.unwrap().is_some());
+    assert!(backend::db::find_user_by_google_sub(&pool, "sub-x")
+        .await
+        .unwrap()
+        .is_some());
 }
 
 #[sqlx::test(migrations = "./migrations")]
 async fn google_only_account_cannot_log_in_with_a_password(pool: PgPool) {
     let app = app(pool.clone()).await;
     let code = seed_invite(&pool).await;
-    let (_, username, _) = backend::db::upsert_google_user(
-        &pool,
-        "sub-pw-test",
-        "pw-test@example.com",
-        "",
-        "",
-        &code,
-    )
-    .await
-    .unwrap();
+    let (_, username, _) =
+        backend::db::upsert_google_user(&pool, "sub-pw-test", "pw-test@example.com", "", "", &code)
+            .await
+            .unwrap();
 
     let req = TestRequest::post()
         .uri("/api/auth/login")
         .set_json(json!({ "username": username, "password": TEST_PASSWORD }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
 async fn google_only_account_cannot_change_a_password(pool: PgPool) {
     let app = app(pool.clone()).await;
     let code = seed_invite(&pool).await;
-    let (user_id, _, _) = backend::db::upsert_google_user(
-        &pool,
-        "sub-cp-test",
-        "cp-test@example.com",
-        "",
-        "",
-        &code,
-    )
-    .await
-    .unwrap();
+    let (user_id, _, _) =
+        backend::db::upsert_google_user(&pool, "sub-cp-test", "cp-test@example.com", "", "", &code)
+            .await
+            .unwrap();
     let token = "test-google-only-session".to_owned();
-    backend::db::create_session(&pool, &token, user_id).await.unwrap();
+    backend::db::create_session(&pool, &token, user_id)
+        .await
+        .unwrap();
 
     let req = TestRequest::put()
         .uri("/api/auth/password")
         .insert_header(auth(&token))
         .set_json(json!({ "current_password": "whatever", "new_password": "new-password-123" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
 async fn set_password_adds_a_password_to_a_google_only_account(pool: PgPool) {
     let app = app(pool.clone()).await;
     let code = seed_invite(&pool).await;
-    let (user_id, username, _) = backend::db::upsert_google_user(
-        &pool,
-        "sub-set-pw",
-        "set-pw@example.com",
-        "",
-        "",
-        &code,
-    )
-    .await
-    .unwrap();
+    let (user_id, username, _) =
+        backend::db::upsert_google_user(&pool, "sub-set-pw", "set-pw@example.com", "", "", &code)
+            .await
+            .unwrap();
     let token = "test-set-password-session".to_owned();
-    backend::db::create_session(&pool, &token, user_id).await.unwrap();
+    backend::db::create_session(&pool, &token, user_id)
+        .await
+        .unwrap();
 
     // No password yet: /me reports it, and vice versa also reports Google.
-    let req = TestRequest::get().uri("/api/auth/me").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/me")
+        .insert_header(auth(&token))
+        .to_request();
     let res = call_service(&app, req).await;
     let profile: serde_json::Value = read_body_json(res).await;
     assert_eq!(profile["has_password"], json!(false));
@@ -1136,7 +1314,10 @@ async fn set_password_adds_a_password_to_a_google_only_account(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "new_password": "brand-new-password-1" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
     // Now signs in with a plain username/password too.
     let req = TestRequest::post()
@@ -1156,14 +1337,22 @@ async fn set_password_rejected_when_account_already_has_one(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "new_password": "some-other-password" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
 async fn google_link_start_requires_auth(pool: PgPool) {
     let app = app_with_google(pool.clone()).await;
-    let req = TestRequest::post().uri("/api/auth/google/link/start").to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    let req = TestRequest::post()
+        .uri("/api/auth/google/link/start")
+        .to_request();
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -1194,7 +1383,10 @@ async fn google_link_start_returns_consent_url_and_stores_state(pool: PgPool) {
 async fn link_google_account_attaches_identity_to_existing_user(pool: PgPool) {
     let app = app(pool.clone()).await;
     let token = register(&app, &pool, "scout-to-link").await;
-    let req = TestRequest::get().uri("/api/auth/me").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/me")
+        .insert_header(auth(&token))
+        .to_request();
     let res = call_service(&app, req).await;
     let profile: serde_json::Value = read_body_json(res).await;
     let username = "scout-to-link";
@@ -1216,7 +1408,10 @@ async fn link_google_account_attaches_identity_to_existing_user(pool: PgPool) {
     .await
     .unwrap();
 
-    let linked = backend::db::find_user_by_google_sub(&pool, "sub-linked-1").await.unwrap().unwrap();
+    let linked = backend::db::find_user_by_google_sub(&pool, "sub-linked-1")
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(linked.id, user_id);
     assert_eq!(linked.username, username);
     // Still has their original password — linking doesn't clear it.
@@ -1260,8 +1455,10 @@ async fn invited_users_can_issue_and_track_their_own_invites(pool: PgPool) {
     let token = register(&app, &pool, "scout-one").await;
 
     // No invites yet; scout-one used an inviter-less bootstrap code.
-    let req =
-        TestRequest::get().uri("/api/invites").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/invites")
+        .insert_header(auth(&token))
+        .to_request();
     let res = call_service(&app, req).await;
     assert_eq!(res.status(), StatusCode::OK);
     let overview: InvitesOverview = read_body_json(res).await;
@@ -1270,8 +1467,14 @@ async fn invited_users_can_issue_and_track_their_own_invites(pool: PgPool) {
     assert!(overview.my_invite_code.is_some());
 
     // Issuing one requires being signed in.
-    let req = TestRequest::post().uri("/api/invites").set_json(json!({})).to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    let req = TestRequest::post()
+        .uri("/api/invites")
+        .set_json(json!({}))
+        .to_request();
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
     let req = TestRequest::post()
         .uri("/api/invites")
@@ -1285,12 +1488,21 @@ async fn invited_users_can_issue_and_track_their_own_invites(pool: PgPool) {
     assert_eq!(issued.name, "Bobby");
     assert_eq!(issued.joined_username, None);
     // Just the code — no prefix, short enough to read out loud.
-    assert!(!issued.code.contains('-'), "unexpected prefix in {}", issued.code);
+    assert!(
+        !issued.code.contains('-'),
+        "unexpected prefix in {}",
+        issued.code
+    );
     assert_eq!(issued.code.len(), 8);
-    assert!(issued.code.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()));
+    assert!(issued
+        .code
+        .chars()
+        .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()));
 
-    let req =
-        TestRequest::get().uri("/api/invites").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/invites")
+        .insert_header(auth(&token))
+        .to_request();
     let overview: InvitesOverview = read_body_json(call_service(&app, req).await).await;
     assert_eq!(overview.invites, vec![issued.clone()]);
 
@@ -1299,8 +1511,10 @@ async fn invited_users_can_issue_and_track_their_own_invites(pool: PgPool) {
 
     // ...and it now shows as joined for the inviter, with the friend's
     // username and the name the invite was created under.
-    let req =
-        TestRequest::get().uri("/api/invites").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/invites")
+        .insert_header(auth(&token))
+        .to_request();
     let overview: InvitesOverview = read_body_json(call_service(&app, req).await).await;
     assert_eq!(
         overview.invites,
@@ -1335,7 +1549,10 @@ async fn new_accounts_can_invite_with_lower_limit(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({}))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // Once the account is a day old, the limit rises to INVITES_PER_DAY_OLD_AGE.
     sqlx::query("UPDATE users SET created_at = now() - interval '25 hours' WHERE username = $1")
@@ -1387,7 +1604,10 @@ async fn invitations_are_limited_to_five_per_day(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({}))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // Yesterday's invitations don't count against today.
     sqlx::query(
@@ -1423,12 +1643,18 @@ async fn invited_user_can_rename_their_invitation(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "name": "Robert" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
     let friend = register_fresh_with_code(&app, "scout-two", &issued.code).await;
 
     // The friend sees who invited them and the name on their invitation.
-    let req = TestRequest::get().uri("/api/invites").insert_header(auth(&friend)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/invites")
+        .insert_header(auth(&friend))
+        .to_request();
     let overview: InvitesOverview = read_body_json(call_service(&app, req).await).await;
     assert_eq!(overview.invited_by, Some("scout-one".to_owned()));
     assert_eq!(overview.my_invite_code, Some(issued.code.clone()));
@@ -1440,7 +1666,10 @@ async fn invited_user_can_rename_their_invitation(pool: PgPool) {
         .insert_header(auth(&friend))
         .set_json(json!({ "name": "Bob" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
     // ...the inviter can no longer rename the redeemed code...
     let req = TestRequest::put()
@@ -1448,7 +1677,10 @@ async fn invited_user_can_rename_their_invitation(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "name": "Hijack" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 
     // ...and a stranger never could.
     let stranger = register(&app, &pool, "scout-three").await;
@@ -1457,14 +1689,26 @@ async fn invited_user_can_rename_their_invitation(pool: PgPool) {
         .insert_header(auth(&stranger))
         .set_json(json!({ "name": "Nope" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 
     // Both sides see the friend's chosen name.
-    let req = TestRequest::get().uri("/api/invites").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/invites")
+        .insert_header(auth(&token))
+        .to_request();
     let overview: InvitesOverview = read_body_json(call_service(&app, req).await).await;
     assert_eq!(overview.invites[0].name, "Bob");
-    assert_eq!(overview.invites[0].joined_username, Some("scout-two".to_owned()));
-    let req = TestRequest::get().uri("/api/invites").insert_header(auth(&friend)).to_request();
+    assert_eq!(
+        overview.invites[0].joined_username,
+        Some("scout-two".to_owned())
+    );
+    let req = TestRequest::get()
+        .uri("/api/invites")
+        .insert_header(auth(&friend))
+        .to_request();
     let overview: InvitesOverview = read_body_json(call_service(&app, req).await).await;
     assert_eq!(overview.my_invite_name, Some("Bob".to_owned()));
 }
@@ -1487,7 +1731,10 @@ async fn pending_invites_show_expired_after_seven_days(pool: PgPool) {
         .await
         .unwrap();
 
-    let req = TestRequest::get().uri("/api/invites").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/invites")
+        .insert_header(auth(&token))
+        .to_request();
     let overview: InvitesOverview = read_body_json(call_service(&app, req).await).await;
     assert_eq!(overview.invites[0].status, InviteStatus::Expired);
 }
@@ -1517,7 +1764,9 @@ async fn edit_place_updates_fields_and_logs_who_changed_what(pool: PgPool) {
     let (editor, id) = place_for_editing(&app, &pool).await;
 
     // No audit rows before any edit.
-    let req = TestRequest::get().uri(&format!("/api/places/{id}/edits")).to_request();
+    let req = TestRequest::get()
+        .uri(&format!("/api/places/{id}/edits"))
+        .to_request();
     let edits: Vec<PlaceEdit> = read_body_json(call_service(&app, req).await).await;
     assert!(edits.is_empty());
 
@@ -1547,7 +1796,9 @@ async fn edit_place_updates_fields_and_logs_who_changed_what(pool: PgPool) {
     assert_eq!(detail.summary.review_count, 1);
 
     // One audit row per changed field, attributed to the editor.
-    let req = TestRequest::get().uri(&format!("/api/places/{id}/edits")).to_request();
+    let req = TestRequest::get()
+        .uri(&format!("/api/places/{id}/edits"))
+        .to_request();
     let edits: Vec<PlaceEdit> = read_body_json(call_service(&app, req).await).await;
     let mut fields: Vec<&str> = edits.iter().map(|e| e.field.as_str()).collect();
     fields.sort_unstable();
@@ -1567,7 +1818,9 @@ async fn edit_place_updates_fields_and_logs_who_changed_what(pool: PgPool) {
         .set_json(body)
         .to_request();
     assert_eq!(call_service(&app, req).await.status(), StatusCode::OK);
-    let req = TestRequest::get().uri(&format!("/api/places/{id}/edits")).to_request();
+    let req = TestRequest::get()
+        .uri(&format!("/api/places/{id}/edits"))
+        .to_request();
     let after: Vec<PlaceEdit> = read_body_json(call_service(&app, req).await).await;
     assert_eq!(after.len(), edits.len());
 }
@@ -1591,7 +1844,9 @@ async fn edit_place_relocates_from_latlng_address(pool: PgPool) {
     assert!((detail.summary.lng + 122.4194).abs() < 1e-9);
 
     // Both the address and the derived location are audited.
-    let req = TestRequest::get().uri(&format!("/api/places/{id}/edits")).to_request();
+    let req = TestRequest::get()
+        .uri(&format!("/api/places/{id}/edits"))
+        .to_request();
     let edits: Vec<PlaceEdit> = read_body_json(call_service(&app, req).await).await;
     let mut fields: Vec<&str> = edits.iter().map(|e| e.field.as_str()).collect();
     fields.sort_unstable();
@@ -1608,7 +1863,10 @@ async fn edit_place_validates_input_and_requires_login(pool: PgPool) {
         .uri(&format!("/api/places/{id}"))
         .set_json(update_place_json())
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
     // A blank name is rejected.
     let mut body = update_place_json();
@@ -1618,7 +1876,10 @@ async fn edit_place_validates_input_and_requires_login(pool: PgPool) {
         .insert_header(auth(&editor))
         .set_json(body)
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // Unknown places 404 for both the edit and its history.
     let missing = "00000000-0000-0000-0000-00000000dead";
@@ -1627,9 +1888,17 @@ async fn edit_place_validates_input_and_requires_login(pool: PgPool) {
         .insert_header(auth(&editor))
         .set_json(update_place_json())
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
-    let req = TestRequest::get().uri(&format!("/api/places/{missing}/edits")).to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
+    let req = TestRequest::get()
+        .uri(&format!("/api/places/{missing}/edits"))
+        .to_request();
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 }
 
 /// Logs in as the startup-created admin account with its documented
@@ -1670,7 +1939,10 @@ async fn admin_account_logs_in_with_default_password(pool: PgPool) {
     assert_eq!(me["is_admin"], true);
 
     let token = register(&app, &pool, "scout-one").await;
-    let req = TestRequest::get().uri("/api/auth/me").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/me")
+        .insert_header(auth(&token))
+        .to_request();
     let me: serde_json::Value = read_body_json(call_service(&app, req).await).await;
     assert_eq!(me["is_admin"], false);
 }
@@ -1694,18 +1966,29 @@ async fn admin_endpoints_reject_anonymous_and_non_admin_callers(pool: PgPool) {
     let token = register(&app, &pool, "scout-one").await;
 
     let req = TestRequest::get().uri("/api/admin/export").to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
-    let req =
-        TestRequest::get().uri("/api/admin/export").insert_header(auth(&token)).to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::FORBIDDEN);
+    let req = TestRequest::get()
+        .uri("/api/admin/export")
+        .insert_header(auth(&token))
+        .to_request();
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::FORBIDDEN
+    );
 
     let req = TestRequest::post()
         .uri("/api/admin/import")
         .insert_header(auth(&token))
         .set_json(empty_backup())
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::FORBIDDEN);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::FORBIDDEN
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -1727,7 +2010,10 @@ async fn admin_export_import_round_trip(pool: PgPool) {
         .uri(&format!("/api/devices/dev-a/saved/{place_id}"))
         .insert_header(auth(&scout))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
     let req = TestRequest::post()
         .uri("/api/invites")
         .insert_header(auth(&scout))
@@ -1785,7 +2071,9 @@ async fn admin_export_import_round_trip(pool: PgPool) {
     let new_password = summary.new_passwords.get("scout-one").unwrap().clone();
 
     // The place is back under the same id, review author intact.
-    let req = TestRequest::get().uri(&format!("/api/places/{place_id}")).to_request();
+    let req = TestRequest::get()
+        .uri(&format!("/api/places/{place_id}"))
+        .to_request();
     let res = call_service(&app, req).await;
     assert_eq!(res.status(), StatusCode::OK);
     let detail: PlaceDetail = read_body_json(res).await;
@@ -1798,7 +2086,10 @@ async fn admin_export_import_round_trip(pool: PgPool) {
         .uri("/api/auth/login")
         .set_json(json!({ "username": "scout-one", "password": TEST_PASSWORD }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
     let req = TestRequest::post()
         .uri("/api/auth/login")
         .set_json(json!({ "username": "scout-one", "password": new_password }))
@@ -1820,7 +2111,10 @@ async fn admin_export_import_round_trip(pool: PgPool) {
         .insert_header(auth(&admin.token))
         .set_json(bad)
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[sqlx::test]
@@ -1838,7 +2132,10 @@ async fn change_password_works(pool: PgPool) {
             "new_password": "brand-new-secret"
         }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // Empty current password is rejected.
     let req = TestRequest::put()
@@ -1849,7 +2146,10 @@ async fn change_password_works(pool: PgPool) {
             "new_password": "brand-new-secret"
         }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // Empty new password is rejected.
     let req = TestRequest::put()
@@ -1860,7 +2160,10 @@ async fn change_password_works(pool: PgPool) {
             "new_password": ""
         }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // Successful change returns 204.
     let req = TestRequest::put()
@@ -1871,7 +2174,10 @@ async fn change_password_works(pool: PgPool) {
             "new_password": "brand-new-secret"
         }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
     // Old token still works (sessions aren't rotated).
     let req = TestRequest::get()
@@ -1888,7 +2194,10 @@ async fn change_password_works(pool: PgPool) {
             "password": "correct-horse-battery"
         }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
     // New password works.
     let req = TestRequest::post()
@@ -1921,7 +2230,10 @@ async fn revoked_invite_cannot_be_redeemed(pool: PgPool) {
         .uri(&format!("/api/invites/{}", issued.code))
         .insert_header(auth(&inviter_token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
     // Try to redeem the revoked code — should fail.
     let res = TestRequest::post()
@@ -1932,7 +2244,10 @@ async fn revoked_invite_cannot_be_redeemed(pool: PgPool) {
             "invite_code": issued.code
         }))
         .to_request();
-    assert_eq!(call_service(&app, res).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, res).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // Verify invitation status is now Expired.
     let req = TestRequest::get()
@@ -1966,9 +2281,15 @@ async fn deleting_an_expired_invite_soft_deletes_it(pool: PgPool) {
         .uri(&format!("/api/invites/{}", issued.code))
         .insert_header(auth(&inviter_token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
-    let req = TestRequest::get().uri("/api/invites").insert_header(auth(&inviter_token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/invites")
+        .insert_header(auth(&inviter_token))
+        .to_request();
     let overview: InvitesOverview = read_body_json(call_service(&app, req).await).await;
     assert!(overview.invites.is_empty());
 
@@ -1984,8 +2305,10 @@ async fn deleting_an_expired_invite_soft_deletes_it(pool: PgPool) {
     assert!(deleted_by.is_some());
 
     // The removal shows up in the inviter's activity log.
-    let req =
-        TestRequest::get().uri("/api/auth/activity").insert_header(auth(&inviter_token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/activity")
+        .insert_header(auth(&inviter_token))
+        .to_request();
     let entries: Vec<ActivityEntry> = read_body_json(call_service(&app, req).await).await;
     assert_eq!(entries[0].kind, "invite_change");
     assert_eq!(entries[0].summary, "Removed invitation for Dana");
@@ -1995,7 +2318,10 @@ async fn deleting_an_expired_invite_soft_deletes_it(pool: PgPool) {
         .uri(&format!("/api/invites/{}", issued.code))
         .insert_header(auth(&inviter_token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2011,7 +2337,10 @@ async fn revoke_rejects_unauthorized_user(pool: PgPool) {
         .uri(&format!("/api/invites/{code}"))
         .insert_header(auth(&token_b))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2034,7 +2363,10 @@ async fn revoke_redeemed_invite_fails(pool: PgPool) {
         .uri(&format!("/api/invites/{code}"))
         .insert_header(auth(&inviter_token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2047,7 +2379,10 @@ async fn revoke_nonexistent_invite_returns_404(pool: PgPool) {
         .uri(&format!("/api/invites/{fake_code}"))
         .insert_header(auth(&token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2060,7 +2395,10 @@ async fn update_profile_rejects_empty_name(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2074,7 +2412,10 @@ async fn update_profile_rejects_too_long_name(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": long_name }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2087,7 +2428,10 @@ async fn update_profile_accepts_valid_name(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "Alice" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
     // Verify the name was saved by checking /me.
     let req = TestRequest::get()
         .uri("/api/auth/me")
@@ -2109,7 +2453,10 @@ async fn update_profile_accepts_both_names(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "Alice", "family_name": "Smith" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
     // Verify both names were saved.
     let req = TestRequest::get()
         .uri("/api/auth/me")
@@ -2132,7 +2479,10 @@ async fn update_profile_partial_family_name(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "family_name": "Jones" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
     // Verify family name was saved and given name is still empty/null.
     let req = TestRequest::get()
         .uri("/api/auth/me")
@@ -2142,7 +2492,9 @@ async fn update_profile_partial_family_name(pool: PgPool) {
     assert_eq!(res.status(), StatusCode::OK);
     let body: serde_json::Value = read_body_json(res).await;
     // given_name should be either null or empty string
-    assert!(body["given_name"].is_null() || body["given_name"].as_str().is_none_or(|s| s.is_empty()));
+    assert!(
+        body["given_name"].is_null() || body["given_name"].as_str().is_none_or(|s| s.is_empty())
+    );
     assert_eq!(body["family_name"], "Jones");
 }
 
@@ -2156,7 +2508,10 @@ async fn update_profile_rejects_both_empty_names(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "", "family_name": "" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2169,7 +2524,10 @@ async fn update_profile_accepts_special_characters_in_name(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "O'Brien", "family_name": "Smith-Jones" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2182,7 +2540,10 @@ async fn update_profile_accepts_unicode_names(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "José", "family_name": "García" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2195,7 +2556,10 @@ async fn update_profile_trims_whitespace_in_name(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "  Alice  ", "family_name": " Smith " }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2208,7 +2572,10 @@ async fn update_profile_rejects_whitespace_only_name(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "   " }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2221,9 +2588,11 @@ async fn update_profile_accepts_internal_whitespace_in_name(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "Mary Jane" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 }
-
 
 #[sqlx::test(migrations = "./migrations")]
 async fn admin_invites_bypass_daily_limit(pool: PgPool) {
@@ -2255,7 +2624,6 @@ async fn admin_invites_bypass_daily_limit(pool: PgPool) {
     assert_eq!(overview.invites.len(), 30);
 }
 
-
 #[sqlx::test(migrations = "./migrations")]
 async fn invite_name_too_long_rejected(pool: PgPool) {
     let app = app(pool.clone()).await;
@@ -2268,7 +2636,10 @@ async fn invite_name_too_long_rejected(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "name": long_name }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // But a name at the limit (40 chars) should work.
     let ok_name = format!("{}.{}", "a".repeat(20), "b".repeat(19));
@@ -2319,7 +2690,10 @@ async fn update_profile_partial_given_name(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "John" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
     // Verify given name was saved and family name is still empty/null.
     let req = TestRequest::get()
         .uri("/api/auth/me")
@@ -2330,7 +2704,9 @@ async fn update_profile_partial_given_name(pool: PgPool) {
     let body: serde_json::Value = read_body_json(res).await;
     assert_eq!(body["given_name"], "John");
     // family_name should be either null or empty string
-    assert!(body["family_name"].is_null() || body["family_name"].as_str().is_none_or(|s| s.is_empty()));
+    assert!(
+        body["family_name"].is_null() || body["family_name"].as_str().is_none_or(|s| s.is_empty())
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2353,7 +2729,10 @@ async fn rename_invite_authorization(pool: PgPool) {
         .insert_header(auth(&alice_token))
         .set_json(json!({ "name": "RenamedByAlice" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
     // Bob (non-inviter, non-redeemer) cannot rename it.
     let bob_token = register(&app, &pool, "rename-bob").await;
@@ -2362,7 +2741,10 @@ async fn rename_invite_authorization(pool: PgPool) {
         .insert_header(auth(&bob_token))
         .set_json(json!({ "name": "Hacked" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 
     // Redeemer can rename it.
     let code_b = seed_invite(&pool).await;
@@ -2372,7 +2754,10 @@ async fn rename_invite_authorization(pool: PgPool) {
         .insert_header(auth(&redeemer_token))
         .set_json(json!({ "name": "MyInviteName" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2392,9 +2777,7 @@ async fn delete_place_soft_deletes_and_hides(pool: PgPool) {
     let place_id = created.summary.id;
 
     // It shows up in the list.
-    let req = TestRequest::get()
-        .uri("/api/places")
-        .to_request();
+    let req = TestRequest::get().uri("/api/places").to_request();
     let places: Vec<PlaceSummary> = read_body_json(call_service(&app, req).await).await;
     assert!(places.iter().any(|p| p.id == place_id));
 
@@ -2403,12 +2786,13 @@ async fn delete_place_soft_deletes_and_hides(pool: PgPool) {
         .uri(&format!("/api/places/{place_id}"))
         .insert_header(auth(&token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
     // No longer in the list.
-    let req = TestRequest::get()
-        .uri("/api/places")
-        .to_request();
+    let req = TestRequest::get().uri("/api/places").to_request();
     let places: Vec<PlaceSummary> = read_body_json(call_service(&app, req).await).await;
     assert!(!places.iter().any(|p| p.id == place_id));
 
@@ -2416,7 +2800,10 @@ async fn delete_place_soft_deletes_and_hides(pool: PgPool) {
     let req = TestRequest::get()
         .uri(&format!("/api/places/{place_id}"))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 
     // Row still exists in the database (soft delete).
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM places WHERE id = $1")
@@ -2427,13 +2814,12 @@ async fn delete_place_soft_deletes_and_hides(pool: PgPool) {
     assert_eq!(count, 1);
 
     // deleted_at and deleted_by are set.
-    let row: (Option<chrono::DateTime<chrono::Utc>>, Option<Uuid>) = sqlx::query_as(
-        "SELECT deleted_at, deleted_by FROM places WHERE id = $1",
-    )
-    .bind(place_id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
+    let row: (Option<chrono::DateTime<chrono::Utc>>, Option<Uuid>) =
+        sqlx::query_as("SELECT deleted_at, deleted_by FROM places WHERE id = $1")
+            .bind(place_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
     assert!(row.0.is_some());
     assert_eq!(row.1, Some(token_user_id(&pool, "scout-delete").await));
 }
@@ -2455,7 +2841,10 @@ async fn delete_place_requires_login(pool: PgPool) {
     let req = TestRequest::delete()
         .uri(&format!("/api/places/{place_id}"))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2468,7 +2857,10 @@ async fn delete_place_nonexistent_returns_404(pool: PgPool) {
         .uri(&format!("/api/places/{fake_id}"))
         .insert_header(auth(&token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2554,7 +2946,10 @@ async fn admin_cannot_edit_self(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "Nope" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2575,7 +2970,10 @@ async fn non_admin_cannot_edit_users(pool: PgPool) {
         .uri(&format!("/api/admin/users/{target_id}"))
         .insert_header(auth(&regular_token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::FORBIDDEN);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::FORBIDDEN
+    );
 
     // PATCH should also be forbidden.
     let req = TestRequest::patch()
@@ -2583,7 +2981,10 @@ async fn non_admin_cannot_edit_users(pool: PgPool) {
         .insert_header(auth(&regular_token))
         .set_json(json!({ "given_name": "Hacked" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::FORBIDDEN);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::FORBIDDEN
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2601,14 +3002,20 @@ async fn admin_edit_nonexistent_user_returns_404(pool: PgPool) {
         .uri(&format!("/api/admin/users/{fake_id}"))
         .insert_header(auth(&token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 
     let req = TestRequest::patch()
         .uri(&format!("/api/admin/users/{fake_id}"))
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "Ghost" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2633,21 +3040,30 @@ async fn admin_delete_user(pool: PgPool) {
         .uri(&format!("/api/admin/users/{my_id}"))
         .insert_header(auth(&admin_token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_REQUEST
+    );
 
     // Admin can delete the target user.
     let req = TestRequest::delete()
         .uri(&format!("/api/admin/users/{target_id}"))
         .insert_header(auth(&admin_token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
     // Verify the user is gone.
     let req = TestRequest::get()
         .uri(&format!("/api/admin/users/{target_id}"))
         .insert_header(auth(&admin_token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NOT_FOUND);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NOT_FOUND
+    );
 }
 
 /// Helper: look up a user's id by username from the test pool.
@@ -2669,7 +3085,10 @@ async fn login_activity_records_successes_and_failures(pool: PgPool) {
         .uri("/api/auth/login")
         .set_json(json!({ "username": "scout-activity", "password": "not-the-password" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
     // Correct password.
     let req = TestRequest::post()
@@ -2678,8 +3097,10 @@ async fn login_activity_records_successes_and_failures(pool: PgPool) {
         .to_request();
     assert_eq!(call_service(&app, req).await.status(), StatusCode::OK);
 
-    let req =
-        TestRequest::get().uri("/api/auth/activity").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/activity")
+        .insert_header(auth(&token))
+        .to_request();
     let entries: Vec<ActivityEntry> = read_body_json(call_service(&app, req).await).await;
     let kinds: Vec<&str> = entries.iter().map(|e| e.kind.as_str()).collect();
     // Newest first: the successful login, then the earlier failed attempt.
@@ -2700,10 +3121,15 @@ async fn login_with_unknown_username_records_nothing(pool: PgPool) {
         .uri("/api/auth/login")
         .set_json(json!({ "username": "totally-unknown", "password": "whatever" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
-    let req =
-        TestRequest::get().uri("/api/auth/activity").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/activity")
+        .insert_header(auth(&token))
+        .to_request();
     let entries: Vec<ActivityEntry> = read_body_json(call_service(&app, req).await).await;
     assert!(entries.is_empty());
 }
@@ -2718,7 +3144,10 @@ async fn profile_and_password_changes_are_logged(pool: PgPool) {
         .insert_header(auth(&token))
         .set_json(json!({ "given_name": "Ada" }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
     let req = TestRequest::put()
         .uri("/api/auth/password")
@@ -2728,10 +3157,15 @@ async fn profile_and_password_changes_are_logged(pool: PgPool) {
             "new_password": "a-new-strong-password",
         }))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::NO_CONTENT);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
 
-    let req =
-        TestRequest::get().uri("/api/auth/activity").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/activity")
+        .insert_header(auth(&token))
+        .to_request();
     let entries: Vec<ActivityEntry> = read_body_json(call_service(&app, req).await).await;
     assert_eq!(entries.len(), 2);
     assert!(entries.iter().all(|e| e.kind == "profile_change"));
@@ -2777,7 +3211,10 @@ async fn admin_activity_endpoint_merges_place_and_rating_history(pool: PgPool) {
     assert_eq!(kinds, vec!["place_change", "rating"]);
     assert!(entries.iter().all(|e| e.actor == "scout-two"));
     let rating = entries.iter().find(|e| e.kind == "rating").unwrap();
-    assert_eq!(rating.summary, "Rated Camber Coffee House — cleanliness 3/5");
+    assert_eq!(
+        rating.summary,
+        "Rated Camber Coffee House — cleanliness 3/5"
+    );
 
     // Admin promotes the editor; the target's log attributes it to the admin.
     let req = TestRequest::patch()
@@ -2811,8 +3248,10 @@ async fn creating_a_place_logs_place_created_and_rating(pool: PgPool) {
         .to_request();
     assert_eq!(call_service(&app, req).await.status(), StatusCode::CREATED);
 
-    let req =
-        TestRequest::get().uri("/api/auth/activity").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/activity")
+        .insert_header(auth(&token))
+        .to_request();
     let entries: Vec<ActivityEntry> = read_body_json(call_service(&app, req).await).await;
     let mut kinds: Vec<&str> = entries.iter().map(|e| e.kind.as_str()).collect();
     kinds.sort_unstable();
@@ -2823,7 +3262,10 @@ async fn creating_a_place_logs_place_created_and_rating(pool: PgPool) {
     assert_eq!(created.actor, "scout-founder");
 
     let rating = entries.iter().find(|e| e.kind == "rating").unwrap();
-    assert_eq!(rating.summary, "Rated Camber Coffee — cleanliness 5/5, coffee 4/5");
+    assert_eq!(
+        rating.summary,
+        "Rated Camber Coffee — cleanliness 5/5, coffee 4/5"
+    );
 }
 
 #[sqlx::test(migrations = "./migrations")]
@@ -2834,7 +3276,10 @@ async fn activity_endpoints_require_login_and_admin(pool: PgPool) {
 
     // Self activity requires a session.
     let req = TestRequest::get().uri("/api/auth/activity").to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::UNAUTHORIZED
+    );
 
     // A non-admin can't view another account's activity.
     let other_token = register(&app, &pool, "nosy-neighbor").await;
@@ -2842,11 +3287,16 @@ async fn activity_endpoints_require_login_and_admin(pool: PgPool) {
         .uri(&format!("/api/admin/users/{target_id}/activity"))
         .insert_header(auth(&other_token))
         .to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::FORBIDDEN);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::FORBIDDEN
+    );
 
     // Sanity: the owner can read their own via /api/auth/activity.
-    let req =
-        TestRequest::get().uri("/api/auth/activity").insert_header(auth(&token)).to_request();
+    let req = TestRequest::get()
+        .uri("/api/auth/activity")
+        .insert_header(auth(&token))
+        .to_request();
     assert_eq!(call_service(&app, req).await.status(), StatusCode::OK);
 }
 
@@ -2871,7 +3321,13 @@ async fn tile_served_from_cache_without_upstream(pool: PgPool) {
     let res = call_service(&app, req).await;
     assert_eq!(res.status(), StatusCode::OK);
     assert_eq!(res.headers().get("content-type").unwrap(), "image/png");
-    assert!(res.headers().get("cache-control").unwrap().to_str().unwrap().contains("max-age"));
+    assert!(res
+        .headers()
+        .get("cache-control")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .contains("max-age"));
     assert_eq!(read_body(res).await.as_ref(), b"fake png bytes");
 }
 
@@ -2908,5 +3364,8 @@ async fn tile_requests_validate_coordinates(pool: PgPool) {
     // An uncached in-range tile with an unreachable upstream is a 502,
     // not a validation error.
     let req = TestRequest::get().uri("/api/tiles/0/0/0.png").to_request();
-    assert_eq!(call_service(&app, req).await.status(), StatusCode::BAD_GATEWAY);
+    assert_eq!(
+        call_service(&app, req).await.status(),
+        StatusCode::BAD_GATEWAY
+    );
 }

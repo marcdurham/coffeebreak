@@ -57,7 +57,10 @@ struct OverpassResponseRaw {
 /// non-distance element ordering, while still bounding worst-case payload
 /// size in dense urban cores.
 pub fn build_query(bbox: &BBox) -> String {
-    let bb = format!("{},{},{},{}", bbox.min_lat, bbox.min_lng, bbox.max_lat, bbox.max_lng);
+    let bb = format!(
+        "{},{},{},{}",
+        bbox.min_lat, bbox.min_lng, bbox.max_lat, bbox.max_lng
+    );
     let filters = [
         format!("node[\"amenity\"=\"fast_food\"]({bb});"),
         format!("way[\"amenity\"=\"fast_food\"]({bb});"),
@@ -201,7 +204,12 @@ mod tests {
     use super::*;
 
     fn seattle_bbox() -> BBox {
-        BBox { min_lat: 47.60, min_lng: -122.35, max_lat: 47.62, max_lng: -122.32 }
+        BBox {
+            min_lat: 47.60,
+            min_lng: -122.35,
+            max_lat: 47.62,
+            max_lng: -122.32,
+        }
     }
 
     #[test]
@@ -229,8 +237,10 @@ mod tests {
             (&[("amenity", "fuel")], None),
         ];
         for (tags, expected) in cases {
-            let map: HashMap<String, String> =
-                tags.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+            let map: HashMap<String, String> = tags
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect();
             assert_eq!(map_tags_to_place_type(&map), expected, "tags: {tags:?}");
         }
     }

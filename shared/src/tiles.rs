@@ -128,8 +128,14 @@ mod tests {
         let (lat, lng) = (47.6097, -122.3422);
         let tile = geohash_encode(lat, lng, OVERPASS_TILE_PRECISION);
         let (min_lat, min_lng, max_lat, max_lng) = tile_bounds(&tile);
-        assert!(min_lat <= lat && lat <= max_lat, "{min_lat} <= {lat} <= {max_lat}");
-        assert!(min_lng <= lng && lng <= max_lng, "{min_lng} <= {lng} <= {max_lng}");
+        assert!(
+            min_lat <= lat && lat <= max_lat,
+            "{min_lat} <= {lat} <= {max_lat}"
+        );
+        assert!(
+            min_lng <= lng && lng <= max_lng,
+            "{min_lng} <= {lng} <= {max_lng}"
+        );
     }
 
     #[test]

@@ -818,7 +818,10 @@ pub fn validate_username(username: &str) -> Result<(), &'static str> {
     if !(USERNAME_MIN..=USERNAME_MAX).contains(&n) {
         return Err("username must be 3-24 characters");
     }
-    if !username.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
+    if !username
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
         return Err("username may only use letters, digits, - and _");
     }
     Ok(())
@@ -1143,8 +1146,12 @@ pub fn radius_to_slider(mi: u8) -> u32 {
 /// grid cell (app-added places are never thinned), and `None` disables
 /// thinning. Index 0 is the default — deliberately sparse, since an
 /// unfiltered Overpass layer can flood a downtown viewport.
-pub const MARKER_DENSITY_LEVELS: [(&str, Option<u32>); 4] =
-    [("Low", Some(5)), ("Medium", Some(9)), ("High", Some(15)), ("All", None)];
+pub const MARKER_DENSITY_LEVELS: [(&str, Option<u32>); 4] = [
+    ("Low", Some(5)),
+    ("Medium", Some(9)),
+    ("High", Some(15)),
+    ("All", None),
+];
 
 pub fn marker_density_cells(level: u8) -> Option<u32> {
     MARKER_DENSITY_LEVELS
@@ -1238,8 +1245,9 @@ mod tests {
     #[test]
     fn app_and_overpass_colors_are_all_distinct() {
         let app_colors: Vec<&str> = PlaceType::ALL.map(|t| t.color(PlaceSource::App)).to_vec();
-        let overpass_colors: Vec<&str> =
-            PlaceType::ALL.map(|t| t.color(PlaceSource::Overpass)).to_vec();
+        let overpass_colors: Vec<&str> = PlaceType::ALL
+            .map(|t| t.color(PlaceSource::Overpass))
+            .to_vec();
         for (i, a) in app_colors.iter().enumerate() {
             for (j, b) in app_colors.iter().enumerate() {
                 assert!(i == j || a != b, "app colors collide: {a} == {b}");
@@ -1343,7 +1351,10 @@ mod tests {
         assert!(qs.contains("sort=cleanliness"));
         assert!(!qs.contains("has_parking"));
         assert_eq!(q.parsed_types(), vec![PlaceType::Shop, PlaceType::Park]);
-        assert_eq!(q.parsed_amenities(), vec![Amenity::Coffee, Amenity::Seating]);
+        assert_eq!(
+            q.parsed_amenities(),
+            vec![Amenity::Coffee, Amenity::Seating]
+        );
     }
 
     #[test]
@@ -1433,9 +1444,18 @@ mod tests {
 
     #[test]
     fn query_param_finds_and_decodes_values() {
-        assert_eq!(query_param("?code=A1B2C3D4", "code"), Some("A1B2C3D4".to_owned()));
-        assert_eq!(query_param("a=1&code=X%20Y%26Z", "code"), Some("X Y&Z".to_owned()));
-        assert_eq!(query_param("?note=one+two", "note"), Some("one two".to_owned()));
+        assert_eq!(
+            query_param("?code=A1B2C3D4", "code"),
+            Some("A1B2C3D4".to_owned())
+        );
+        assert_eq!(
+            query_param("a=1&code=X%20Y%26Z", "code"),
+            Some("X Y&Z".to_owned())
+        );
+        assert_eq!(
+            query_param("?note=one+two", "note"),
+            Some("one two".to_owned())
+        );
         assert_eq!(query_param("?code=A", "other"), None);
         assert_eq!(query_param("", "code"), None);
         // Malformed escapes pass through rather than panicking.

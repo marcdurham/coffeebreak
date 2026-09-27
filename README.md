@@ -1,4 +1,4 @@
-# Service Break
+# Coffee Breaks
 
 Find a clean place: real bathroom ratings at shops, stores, malls, parks
 & more — sorted by what's closest to you.

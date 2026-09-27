@@ -1,4 +1,4 @@
-# Service Break — Style Audit & Contrast Analysis
+# Coffee Breaks — Style Audit & Contrast Analysis
 
 Generated from reviewing all frontend components against `styles.css` and the design mockup.
 

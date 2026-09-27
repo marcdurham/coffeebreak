@@ -43,9 +43,9 @@ pub struct GoogleConfig {
     pub client_id: String,
     pub client_secret: String,
     /// Must exactly match a redirect URI configured on the Google OAuth
-    /// client, e.g. `https://servicebreak.example.com/api/auth/google/callback`.
+    /// client, e.g. `https://coffeebreaks.fyi/api/auth/google/callback`.
     pub redirect_uri: String,
-    /// The frontend's origin, e.g. `https://servicebreak.example.com` —
+    /// The frontend's origin, e.g. `https://coffeebreaks.fyi` —
     /// derived from `redirect_uri` (same origin, `/api/...` is proxied
     /// through to the backend by nginx/Trunk).
     pub app_base_url: String,
@@ -60,7 +60,12 @@ impl GoogleConfig {
             .strip_suffix("/api/auth/google/callback")
             .unwrap_or(&redirect_uri)
             .to_owned();
-        Some(GoogleConfig { client_id, client_secret, redirect_uri, app_base_url })
+        Some(GoogleConfig {
+            client_id,
+            client_secret,
+            redirect_uri,
+            app_base_url,
+        })
     }
 }
 
@@ -84,7 +89,11 @@ struct StartQuery {
 /// tokens (see `auth::new_token`), just a separate function since that
 /// one's private to `auth`.
 fn new_state_token() -> String {
-    format!("{}{}", uuid::Uuid::new_v4().simple(), uuid::Uuid::new_v4().simple())
+    format!(
+        "{}{}",
+        uuid::Uuid::new_v4().simple(),
+        uuid::Uuid::new_v4().simple()
+    )
 }
 
 /// Kicks off the flow: stores server-side state, then 302s the browser to
@@ -96,7 +105,11 @@ async fn google_start(state: Data<AppState>, query: Query<StartQuery>) -> HttpRe
             .json(json!({ "error": "Google sign-in isn't configured on this server" }));
     };
 
-    let mode = if query.mode == "register" { "register" } else { "login" };
+    let mode = if query.mode == "register" {
+        "register"
+    } else {
+        "login"
+    };
     let invite_code = query.invite_code.trim().to_owned();
     if mode == "register" && invite_code.is_empty() {
         return HttpResponse::BadRequest()
@@ -110,7 +123,9 @@ async fn google_start(state: Data<AppState>, query: Query<StartQuery>) -> HttpRe
             .json(json!({ "error": "could not start Google sign-in" }));
     }
 
-    HttpResponse::Found().append_header(("Location", google_auth_url(cfg, &state_token))).finish()
+    HttpResponse::Found()
+        .append_header(("Location", google_auth_url(cfg, &state_token)))
+        .finish()
 }
 
 /// Builds Google's consent-screen URL for a given (already-stored) state
@@ -157,8 +172,16 @@ async fn google_link_start(state: Data<AppState>, user: AuthUser) -> HttpRespons
 #[post("/api/auth/google/unlink")]
 async fn google_unlink(state: Data<AppState>, user: AuthUser) -> Result<HttpResponse, ApiError> {
     db::unlink_google_account(&state.pool, user.id).await?;
-    db::record_activity(&state.pool, user.id, "profile_change", "google_unlink", "", "", Some(user.id))
-        .await?;
+    db::record_activity(
+        &state.pool,
+        user.id,
+        "profile_change",
+        "google_unlink",
+        "",
+        "",
+        Some(user.id),
+    )
+    .await?;
     tracing::info!(user_id = %user.id, username = %user.username, "google account unlinked");
     Ok(HttpResponse::NoContent().finish())
 }
@@ -223,8 +246,13 @@ async fn fetch_profile(
 /// Redirects to the frontend's `/oauth-complete` route with `message` in
 /// the URL fragment, for it to show as a toast.
 fn redirect_with_error(app_base_url: &str, message: &str) -> HttpResponse {
-    let url = format!("{app_base_url}/oauth-complete#error={}", encode_query_component(message));
-    HttpResponse::Found().append_header(("Location", url)).finish()
+    let url = format!(
+        "{app_base_url}/oauth-complete#error={}",
+        encode_query_component(message)
+    );
+    HttpResponse::Found()
+        .append_header(("Location", url))
+        .finish()
 }
 
 /// Redirects to the frontend's `/oauth-complete` route with `message` in
@@ -233,9 +261,13 @@ fn redirect_with_error(app_base_url: &str, message: &str) -> HttpResponse {
 /// banner) instead of dropping them back on the login page with a toast
 /// that vanishes before most people act on it.
 fn redirect_to_register(app_base_url: &str, message: &str) -> HttpResponse {
-    let url =
-        format!("{app_base_url}/oauth-complete#register_required={}", encode_query_component(message));
-    HttpResponse::Found().append_header(("Location", url)).finish()
+    let url = format!(
+        "{app_base_url}/oauth-complete#register_required={}",
+        encode_query_component(message)
+    );
+    HttpResponse::Found()
+        .append_header(("Location", url))
+        .finish()
 }
 
 /// Redirects to the frontend's `/oauth-complete` route with the new
@@ -247,7 +279,9 @@ fn redirect_with_session(app_base_url: &str, session: &shared::AuthSession) -> H
         encode_query_component(&session.username),
         session.is_admin,
     );
-    HttpResponse::Found().append_header(("Location", url)).finish()
+    HttpResponse::Found()
+        .append_header(("Location", url))
+        .finish()
 }
 
 /// Redirects to the frontend's `/oauth-complete` route reporting a
@@ -255,7 +289,12 @@ fn redirect_with_session(app_base_url: &str, session: &shared::AuthSession) -> H
 /// signed in, and their existing bearer token (kept in browser storage,
 /// untouched by this round trip) is still valid.
 fn redirect_linked(app_base_url: &str) -> HttpResponse {
-    HttpResponse::Found().append_header(("Location", format!("{app_base_url}/oauth-complete#linked=1"))).finish()
+    HttpResponse::Found()
+        .append_header((
+            "Location",
+            format!("{app_base_url}/oauth-complete#linked=1"),
+        ))
+        .finish()
 }
 
 /// Where Google sends the browser back to after the consent screen.
@@ -269,13 +308,18 @@ async fn google_callback(state: Data<AppState>, query: Query<CallbackQuery>) -> 
     };
 
     if let Some(err) = &query.error {
-        return redirect_with_error(&cfg.app_base_url, &format!("Google sign-in was cancelled ({err})"));
+        return redirect_with_error(
+            &cfg.app_base_url,
+            &format!("Google sign-in was cancelled ({err})"),
+        );
     }
     let (Some(code), Some(state_token)) = (&query.code, &query.state) else {
         return redirect_with_error(&cfg.app_base_url, "Google sign-in response was incomplete");
     };
 
-    let (mode, invite_code, link_user_id) = match db::take_oauth_state(&state.pool, state_token).await {
+    let (mode, invite_code, link_user_id) = match db::take_oauth_state(&state.pool, state_token)
+        .await
+    {
         Ok(Some(v)) => v,
         Ok(None) => {
             return redirect_with_error(&cfg.app_base_url, "that sign-in link expired — try again")
@@ -298,12 +342,18 @@ async fn google_callback(state: Data<AppState>, query: Query<CallbackQuery>) -> 
         }
     };
     if !profile.email_verified {
-        return redirect_with_error(&cfg.app_base_url, "your Google account's email isn't verified");
+        return redirect_with_error(
+            &cfg.app_base_url,
+            "your Google account's email isn't verified",
+        );
     }
 
     if mode == "link" {
         let Some(user_id) = link_user_id else {
-            return redirect_with_error(&cfg.app_base_url, "that link request was invalid — try again");
+            return redirect_with_error(
+                &cfg.app_base_url,
+                "that link request was invalid — try again",
+            );
         };
         return match db::link_google_account(
             &state.pool,

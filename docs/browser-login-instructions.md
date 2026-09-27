@@ -1,6 +1,6 @@
 # Browser Login Instructions
 
-Quick reference for logging into the Service Break app via browser automation.
+Quick reference for logging into the Coffee Breaks app via browser automation.
 
 ## Prerequisites
 

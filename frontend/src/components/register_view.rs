@@ -40,12 +40,7 @@ fn code_from_url() -> String {
 }
 
 /// A labelled text input bound to a state handle.
-fn field(
-    label: &str,
-    placeholder: &str,
-    password: bool,
-    value: &UseStateHandle<String>,
-) -> Html {
+fn field(label: &str, placeholder: &str, password: bool, value: &UseStateHandle<String>) -> Html {
     let oninput = {
         let value = value.clone();
         Callback::from(move |e: InputEvent| {
@@ -148,8 +143,8 @@ pub fn register_view(props: &RegisterViewProps) -> Html {
                 password: (*password).clone(),
                 invite_code: invite_code.trim().to_owned(),
             };
-            if let Err(e) = validate_username(&creds.username)
-                .and_then(|()| validate_password(&creds.password))
+            if let Err(e) =
+                validate_username(&creds.username).and_then(|()| validate_password(&creds.password))
             {
                 on_toast.emit(e.to_owned());
                 return;
@@ -201,8 +196,14 @@ pub fn register_view(props: &RegisterViewProps) -> Html {
         })
     };
 
-    let toggle_pw = { let s = show_pw.clone(); Callback::from(move |_| s.set(!*s)) };
-    let toggle_confirm = { let s = show_confirm.clone(); Callback::from(move |_| s.set(!*s)) };
+    let toggle_pw = {
+        let s = show_pw.clone();
+        Callback::from(move |_| s.set(!*s))
+    };
+    let toggle_confirm = {
+        let s = show_confirm.clone();
+        Callback::from(move |_| s.set(!*s))
+    };
 
     html! {
         <div class="screen sb-scroll">

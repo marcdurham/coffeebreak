@@ -273,9 +273,7 @@ pub fn account_view(props: &AccountViewProps) -> Html {
         let my_name = my_name.clone();
         let on_toast = props.on_toast.clone();
         Callback::from(move |_| {
-            let Some(code) =
-                overview.as_ref().and_then(|o| o.my_invite_code.clone())
-            else {
+            let Some(code) = overview.as_ref().and_then(|o| o.my_invite_code.clone()) else {
                 return;
             };
             let name = my_name.trim().to_owned();
@@ -295,8 +293,16 @@ pub fn account_view(props: &AccountViewProps) -> Html {
         let on_toast = props.on_toast.clone();
         Callback::from(move |_| {
             let profile = UpdateProfile {
-                given_name: if (*given_name).is_empty() { None } else { Some((*given_name).clone()) },
-                family_name: if (*family_name).is_empty() { None } else { Some((*family_name).clone()) },
+                given_name: if (*given_name).is_empty() {
+                    None
+                } else {
+                    Some((*given_name).clone())
+                },
+                family_name: if (*family_name).is_empty() {
+                    None
+                } else {
+                    Some((*family_name).clone())
+                },
             };
             let on_toast = on_toast.clone();
             wasm_bindgen_futures::spawn_local(async move {
@@ -312,7 +318,6 @@ pub fn account_view(props: &AccountViewProps) -> Html {
         let cb = props.on_logout.clone();
         Callback::from(move |_| cb.emit(()))
     };
-
 
     let go_to_admin = {
         let nav = navigator.clone();

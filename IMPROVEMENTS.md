@@ -1,4 +1,4 @@
-# Improvements — Service Break
+# Improvements — Coffee Breaks
 
 Concrete improvement items with file paths and acceptance criteria.
 

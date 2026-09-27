@@ -25,7 +25,11 @@ pub struct ChangePasswordViewProps {
 
 /// A text input with a small eye button that toggles between password and
 /// plain text. The `show` flag controls the visible type; `on_toggle` flips it.
-pub(crate) fn password_field(show: UseStateHandle<String>, show_pw: bool, on_toggle: Callback<MouseEvent>) -> Html {
+pub(crate) fn password_field(
+    show: UseStateHandle<String>,
+    show_pw: bool,
+    on_toggle: Callback<MouseEvent>,
+) -> Html {
     let input_type = if show_pw { "text" } else { "password" };
     html! {
         <div class="input-row">
@@ -85,9 +89,18 @@ pub fn change_password_view(props: &ChangePasswordViewProps) -> Html {
         return html! { <div class="screen sb-scroll"><div class="screen-title">{"Change password"}</div></div> };
     }
 
-    let toggle_show_cur = { let show_cur = show_cur.clone(); Callback::from(move |_| show_cur.set(!*show_cur)) };
-    let toggle_show_new = { let show_new = show_new.clone(); Callback::from(move |_| show_new.set(!*show_new)) };
-    let toggle_show_confirm = { let show_confirm = show_confirm.clone(); Callback::from(move |_| show_confirm.set(!*show_confirm)) };
+    let toggle_show_cur = {
+        let show_cur = show_cur.clone();
+        Callback::from(move |_| show_cur.set(!*show_cur))
+    };
+    let toggle_show_new = {
+        let show_new = show_new.clone();
+        Callback::from(move |_| show_new.set(!*show_new))
+    };
+    let toggle_show_confirm = {
+        let show_confirm = show_confirm.clone();
+        Callback::from(move |_| show_confirm.set(!*show_confirm))
+    };
 
     let change_password = {
         let cur_pw = cur_pw.clone();

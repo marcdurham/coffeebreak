@@ -47,7 +47,11 @@ fn saved_card(p: &PlaceSummary, props: &SavedViewProps) -> Html {
         })
     };
     let sub = match p.distance_mi {
-        Some(d) => format!("{} · {} mi away", p.place_type.label(), shared::fmt_distance_mi(d)),
+        Some(d) => format!(
+            "{} · {} mi away",
+            p.place_type.label(),
+            shared::fmt_distance_mi(d)
+        ),
         None => p.place_type.label().to_owned(),
     };
     html! {

@@ -212,10 +212,6 @@ pub fn detail_view(props: &DetailViewProps) -> Html {
         })
     };
 
-
-
-
-
     let send_review = {
         let composing = composing.clone();
         let clean_pick = clean_pick.clone();

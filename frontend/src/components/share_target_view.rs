@@ -20,7 +20,9 @@ pub struct ShareTargetViewProps {
 }
 
 fn search() -> String {
-    web_sys::window().and_then(|w| w.location().search().ok()).unwrap_or_default()
+    web_sys::window()
+        .and_then(|w| w.location().search().ok())
+        .unwrap_or_default()
 }
 
 #[function_component(ShareTargetView)]

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <title>Service Break</title>
+  <title>Coffee Breaks</title>
   <meta name="theme-color" content="#3a2418">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -194,7 +194,7 @@
       window.sbShareInvite = function (text, code) {
         const url = location.origin + '/register?code=' + encodeURIComponent(code);
         if (navigator.share) {
-          navigator.share({ title: 'Service Break', text, url }).catch(() => {});
+          navigator.share({ title: 'Coffee Breaks', text, url }).catch(() => {});
           return true;
         }
         if (navigator.clipboard) {

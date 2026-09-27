@@ -69,14 +69,20 @@ impl Route {
     /// overlay-style routes (the place detail sheet, the POI edit gate)
     /// and the 404 fallback.
     pub fn is_nav(self) -> bool {
-        !matches!(self, Route::Place { .. } | Route::PoiEdit { .. } | Route::NotFound)
+        !matches!(
+            self,
+            Route::Place { .. } | Route::PoiEdit { .. } | Route::NotFound
+        )
     }
 
     /// The edit route for an Overpass POI id like `"node/123456"`;
     /// `None` when the id isn't in the `kind/number` form.
     pub fn poi_edit(poi_id: &str) -> Option<Route> {
         let (kind, num) = poi_id.split_once('/')?;
-        Some(Route::PoiEdit { kind: kind.parse().ok()?, num: num.parse().ok()? })
+        Some(Route::PoiEdit {
+            kind: kind.parse().ok()?,
+            num: num.parse().ok()?,
+        })
     }
 }
 
@@ -126,11 +132,17 @@ mod tests {
     fn poi_edit_parses_osm_refs() {
         assert_eq!(
             Route::poi_edit("node/123456"),
-            Some(Route::PoiEdit { kind: OsmKind::Node, num: 123456 })
+            Some(Route::PoiEdit {
+                kind: OsmKind::Node,
+                num: 123456
+            })
         );
         assert_eq!(
             Route::poi_edit("way/7"),
-            Some(Route::PoiEdit { kind: OsmKind::Way, num: 7 })
+            Some(Route::PoiEdit {
+                kind: OsmKind::Way,
+                num: 7
+            })
         );
         assert_eq!(Route::poi_edit("building/9"), None);
         assert_eq!(Route::poi_edit("node/abc"), None);

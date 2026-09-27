@@ -1,6 +1,6 @@
 {
-  "name": "Service Break",
-  "short_name": "Service Break",
+  "name": "Coffee Breaks",
+  "short_name": "Coffee Breaks",
   "description": "Find good places to take a break — rate the coffee, food, cleanliness and more at nearby spots.",
   "start_url": "/",
   "display": "standalone",

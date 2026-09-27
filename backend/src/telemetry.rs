@@ -42,7 +42,11 @@ impl OpenObserveConfig {
         let user =
             std::env::var("OPENOBSERVE_USER").unwrap_or_else(|_| "admin@example.com".to_owned());
         let password = std::env::var("OPENOBSERVE_PASSWORD").unwrap_or_default();
-        Some(Self { ingest_url: format!("{base}/api/{org}/{stream}/_json"), user, password })
+        Some(Self {
+            ingest_url: format!("{base}/api/{org}/{stream}/_json"),
+            user,
+            password,
+        })
     }
 }
 
@@ -82,7 +86,10 @@ impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for ChannelMakeWriter {
     type Writer = ChannelWriter;
 
     fn make_writer(&'a self) -> Self::Writer {
-        ChannelWriter { tx: self.tx.clone(), buf: Vec::new() }
+        ChannelWriter {
+            tx: self.tx.clone(),
+            buf: Vec::new(),
+        }
     }
 }
 
@@ -122,7 +129,12 @@ pub fn spawn_shipper(config: OpenObserveConfig, http: reqwest::Client) -> Channe
 /// POSTs newline-delimited JSON lines to OpenObserve's `_json` bulk
 /// ingestion endpoint. Failures are only `eprintln!`'d — never routed back
 /// through `tracing`, which would re-enter this same channel.
-async fn flush(http: &reqwest::Client, config: &OpenObserveConfig, batch: &mut Vec<u8>, count: &mut usize) {
+async fn flush(
+    http: &reqwest::Client,
+    config: &OpenObserveConfig,
+    batch: &mut Vec<u8>,
+    count: &mut usize,
+) {
     if batch.is_empty() {
         return;
     }
@@ -130,7 +142,11 @@ async fn flush(http: &reqwest::Client, config: &OpenObserveConfig, batch: &mut V
     // is already one JSON object, so wrap them in `[...]` with commas.
     let mut body = Vec::with_capacity(batch.len() + *count + 2);
     body.push(b'[');
-    for (i, line) in batch.split(|&b| b == b'\n').filter(|l| !l.is_empty()).enumerate() {
+    for (i, line) in batch
+        .split(|&b| b == b'\n')
+        .filter(|l| !l.is_empty())
+        .enumerate()
+    {
         if i > 0 {
             body.push(b',');
         }

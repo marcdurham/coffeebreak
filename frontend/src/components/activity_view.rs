@@ -69,7 +69,11 @@ pub fn activity_view(props: &ActivityViewProps) -> Html {
         });
     }
 
-    let default_back = if props.user_id.is_some() { Route::Users } else { Route::Account };
+    let default_back = if props.user_id.is_some() {
+        Route::Users
+    } else {
+        Route::Account
+    };
     let go_back = {
         let navigator = navigator.clone();
         let back_route = props.back_route.unwrap_or(default_back);

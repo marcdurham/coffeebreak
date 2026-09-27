@@ -2,9 +2,7 @@ use std::collections::HashMap;
 
 use gloo_storage::{LocalStorage, Storage};
 use serde::Serialize;
-use shared::{
-    Amenity, BBox, MapsLinkResult, OverpassPoi, PlaceSource, PlaceSummary, PlacesQuery,
-};
+use shared::{Amenity, BBox, MapsLinkResult, OverpassPoi, PlaceSource, PlaceSummary, PlacesQuery};
 use uuid::Uuid;
 use wasm_bindgen::prelude::Closure;
 use wasm_bindgen::JsCast;
@@ -86,7 +84,8 @@ pub fn map_view(props: &MapViewProps) -> Html {
     // One-time tip bubble pointing at the Discover button, shown until the
     // user interacts with anything (dismissed via a window-level click
     // listener below, so any tap dismisses it, not just its own controls).
-    let show_tip = use_state(|| !LocalStorage::get::<bool>("sb_seen_discover_tip").unwrap_or(false));
+    let show_tip =
+        use_state(|| !LocalStorage::get::<bool>("sb_seen_discover_tip").unwrap_or(false));
     // Whether the current search has been submitted (Enter, or tapping the
     // search icon) -- while true, the map's pins are narrowed to just the
     // matches instead of showing the live-suggestion dropdown. Editing the
@@ -230,7 +229,9 @@ pub fn map_view(props: &MapViewProps) -> Html {
     let search_places = (*results).clone().unwrap_or_default();
     // Total match count for the badge near the search box; `None` while a
     // debounced fetch is still pending, so the count doesn't flash to 0.
-    let search_count = searching.then(|| results.as_ref().map(|r| r.len() + poi_matches.len())).flatten();
+    let search_count = searching
+        .then(|| results.as_ref().map(|r| r.len() + poi_matches.len()))
+        .flatten();
 
     // The pin-tap and bounds-changed callbacks must survive re-renders; the
     // JS side holds one function each for the map's lifetime, reading the
@@ -272,8 +273,7 @@ pub fn map_view(props: &MapViewProps) -> Html {
                         select_ref.borrow().emit(id);
                     }
                     Err(_) => {
-                        if let Some(poi) =
-                            overpass_lookup_ref.borrow().iter().find(|p| p.id == id)
+                        if let Some(poi) = overpass_lookup_ref.borrow().iter().find(|p| p.id == id)
                         {
                             // Show the compact tile (not the full-page
                             // preview) and drop any app-place selection so
@@ -284,10 +284,16 @@ pub fn map_view(props: &MapViewProps) -> Html {
                     }
                 }
             });
-            let bounds_closure =
-                Closure::<dyn Fn(f64, f64, f64, f64)>::new(move |min_lat, min_lng, max_lat, max_lng| {
-                    bounds_ref.borrow().emit(BBox { min_lat, min_lng, max_lat, max_lng });
-                });
+            let bounds_closure = Closure::<dyn Fn(f64, f64, f64, f64)>::new(
+                move |min_lat, min_lng, max_lat, max_lng| {
+                    bounds_ref.borrow().emit(BBox {
+                        min_lat,
+                        min_lng,
+                        max_lat,
+                        max_lng,
+                    });
+                },
+            );
             let empty_click_closure = Closure::<dyn Fn()>::new(move || {
                 dismissed_for_empty_click.set(true);
                 featured_poi_for_empty_click.set(None);
@@ -358,7 +364,11 @@ pub fn map_view(props: &MapViewProps) -> Html {
             // A submitted search narrows the map to just its matches instead
             // of the full place/Overpass layers.
             let places = if *submitted { search_places } else { places };
-            let overpass_places = if *submitted { poi_matches } else { overpass_places };
+            let overpass_places = if *submitted {
+                poi_matches
+            } else {
+                overpass_places
+            };
             let mut pins: Vec<Pin> = places
                 .iter()
                 .map(|p| Pin {
@@ -429,8 +439,8 @@ pub fn map_view(props: &MapViewProps) -> Html {
             }
             move || {
                 if let (Some(win), Some(cl)) = (window.as_ref(), listener.as_ref()) {
-                    let _ =
-                        win.remove_event_listener_with_callback("click", cl.as_ref().unchecked_ref());
+                    let _ = win
+                        .remove_event_listener_with_callback("click", cl.as_ref().unchecked_ref());
                 }
             }
         });
@@ -564,8 +574,7 @@ fn grid_thinned(
     bounds: Option<BBox>,
     density_level: u8,
 ) -> Vec<&OverpassPoi> {
-    let (Some(cells_across), Some(b)) =
-        (shared::marker_density_cells(density_level), bounds)
+    let (Some(cells_across), Some(b)) = (shared::marker_density_cells(density_level), bounds)
     else {
         return pois.iter().collect();
     };
@@ -580,7 +589,10 @@ fn grid_thinned(
     // Per cell: (winning hash, index into `pois`), lowest hash wins.
     let mut best: HashMap<(i64, i64), (u64, usize)> = HashMap::new();
     for (i, p) in pois.iter().enumerate() {
-        let key = ((p.lat / cell).floor() as i64, ((p.lng / cell).floor()) as i64);
+        let key = (
+            (p.lat / cell).floor() as i64,
+            ((p.lng / cell).floor()) as i64,
+        );
         let hash = fnv1a(p.id.as_bytes());
         let entry = best.entry(key).or_insert((hash, i));
         if hash < entry.0 {
@@ -692,7 +704,11 @@ fn poi_result_row(p: &OverpassPoi, pick: &Callback<OverpassPoi>) -> Html {
 /// listener in [`map_view`]). `above_card` mirrors the Discover button's own
 /// offset so the tip still points at it when the featured card is showing.
 fn discover_tip(above_card: bool, on_close: &Callback<MouseEvent>) -> Html {
-    let class = if above_card { "discover-tip above-card" } else { "discover-tip" };
+    let class = if above_card {
+        "discover-tip above-card"
+    } else {
+        "discover-tip"
+    };
     html! {
         <div {class} onclick={|e: MouseEvent| e.stop_propagation()}>
             <button class="discover-tip-close" onclick={on_close.clone()}>
@@ -706,7 +722,11 @@ fn discover_tip(above_card: bool, on_close: &Callback<MouseEvent>) -> Html {
 }
 
 fn featured_card(p: &PlaceSummary, props: &MapViewProps, on_close: &Callback<MouseEvent>) -> Html {
-    let near_tag = if props.selected == Some(p.id) { "Selected" } else { "Nearest to you" };
+    let near_tag = if props.selected == Some(p.id) {
+        "Selected"
+    } else {
+        "Nearest to you"
+    };
     let open_card = {
         let cb = props.on_open.clone();
         let id = p.id;
@@ -756,7 +776,11 @@ fn featured_card(p: &PlaceSummary, props: &MapViewProps, on_close: &Callback<Mou
 /// Same compact bottom tile as [`featured_card`], but for a tapped unvisited
 /// (Overpass) pin. Tapping it opens the full-page POI preview, which is
 /// where Save/Rate/Edit live.
-fn featured_poi_card(p: &OverpassPoi, props: &MapViewProps, on_close: &Callback<MouseEvent>) -> Html {
+fn featured_poi_card(
+    p: &OverpassPoi,
+    props: &MapViewProps,
+    on_close: &Callback<MouseEvent>,
+) -> Html {
     let open_card = {
         let cb = props.on_open_poi.clone();
         let poi = p.clone();

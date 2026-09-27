@@ -11,11 +11,7 @@ fn is_allowed_host(url: &reqwest::Url) -> bool {
         && matches!(
             url.host_str(),
             Some(
-                "maps.app.goo.gl"
-                    | "goo.gl"
-                    | "www.google.com"
-                    | "google.com"
-                    | "maps.google.com"
+                "maps.app.goo.gl" | "goo.gl" | "www.google.com" | "google.com" | "maps.google.com"
             )
         )
 }
@@ -96,7 +92,9 @@ pub async fn resolve(http: &reqwest::Client, link: &str) -> Result<(String, f64,
     let parsed = reqwest::Url::parse(link)
         .map_err(|_| ApiError::BadRequest("not a valid URL".to_owned()))?;
     if !is_allowed_host(&parsed) {
-        return Err(ApiError::BadRequest("only Google Maps links are supported".to_owned()));
+        return Err(ApiError::BadRequest(
+            "only Google Maps links are supported".to_owned(),
+        ));
     }
     let resp = http
         .get(parsed)
@@ -147,7 +145,8 @@ mod tests {
 
     #[test]
     fn rejects_disallowed_hosts() {
-        let url = reqwest::Url::parse("https://evil.example.com/maps/place/x/@1,2,3z").expect("parse");
+        let url =
+            reqwest::Url::parse("https://evil.example.com/maps/place/x/@1,2,3z").expect("parse");
         assert!(!is_allowed_host(&url));
     }
 }

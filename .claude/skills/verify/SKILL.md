@@ -1,9 +1,9 @@
 ---
 name: verify
-description: How to build, launch and drive Service Break to verify a change end-to-end (backend API + Yew frontend in a browser).
+description: How to build, launch and drive Coffee Breaks to verify a change end-to-end (backend API + Yew frontend in a browser).
 ---
 
-# Verifying Service Break changes
+# Verifying Coffee Breaks changes
 
 ## Watch out: the user's own dev servers are often already running
 

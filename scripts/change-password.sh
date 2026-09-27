@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Resets a Service Break user's password by writing a fresh Argon2 hash
+# Resets a Coffee Breaks user's password by writing a fresh Argon2 hash
 # straight into the users table, and revokes that user's sessions.
 #
 # Usage:

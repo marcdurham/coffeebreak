@@ -173,7 +173,7 @@ async fn export_data(state: Data<AppState>, admin: AdminUser) -> Result<HttpResp
     Ok(HttpResponse::Ok()
         .insert_header((
             "Content-Disposition",
-            "attachment; filename=\"service-break-backup.json\"",
+            "attachment; filename=\"coffee-breaks-backup.json\"",
         ))
         .json(data))
 }
@@ -223,10 +223,7 @@ async fn collect_export(pool: &PgPool) -> Result<ExportData, ApiError> {
 
 /// `GET /api/admin/users` — every account, no password hash.
 #[get("/api/admin/users")]
-async fn list_users(
-    state: Data<AppState>,
-    _admin: AdminUser,
-) -> Result<HttpResponse, ApiError> {
+async fn list_users(state: Data<AppState>, _admin: AdminUser) -> Result<HttpResponse, ApiError> {
     let users = db::list_users(&state.pool).await?;
     Ok(HttpResponse::Ok().json(users))
 }
@@ -340,19 +337,27 @@ async fn run_import(
         .users
         .iter()
         .map(|u| {
-            let actual = existing.get(&u.username.to_lowercase()).copied().unwrap_or(u.id);
+            let actual = existing
+                .get(&u.username.to_lowercase())
+                .copied()
+                .unwrap_or(u.id);
             (u.id, actual)
         })
         .collect();
     let map_user = |id: Option<Uuid>| id.and_then(|id| id_map.get(&id).copied());
 
-    let exported_names: Vec<String> =
-        data.users.iter().map(|u| u.username.to_lowercase()).collect();
+    let exported_names: Vec<String> = data
+        .users
+        .iter()
+        .map(|u| u.username.to_lowercase())
+        .collect();
 
     let mut tx = pool.begin().await?;
 
     for table in ["saved_places", "reviews", "places", "invitations"] {
-        sqlx::query(&format!("DELETE FROM {table}")).execute(&mut *tx).await?;
+        sqlx::query(&format!("DELETE FROM {table}"))
+            .execute(&mut *tx)
+            .await?;
     }
     // Accounts not in the backup go too — except the caller's, which the
     // running session depends on.
@@ -460,8 +465,11 @@ async fn run_import(
 
     tx.commit().await?;
 
-    let new_passwords: BTreeMap<String, String> =
-        to_create.into_iter().map(|u| u.username).zip(passwords).collect();
+    let new_passwords: BTreeMap<String, String> = to_create
+        .into_iter()
+        .map(|u| u.username)
+        .zip(passwords)
+        .collect();
 
     Ok(ImportSummary {
         users: data.users.len(),
@@ -654,11 +662,22 @@ async fn update_user(
     }
 
     let changed_fields: Vec<&str> = [
-        new.username.as_ref().filter(|n| **n != user.username).map(|_| "username"),
+        new.username
+            .as_ref()
+            .filter(|n| **n != user.username)
+            .map(|_| "username"),
         new.password.is_some().then_some("password"),
-        new.is_admin.filter(|a| *a != user.is_admin).map(|_| "is_admin"),
-        new.given_name.as_ref().filter(|n| **n != user.given_name).map(|_| "given_name"),
-        new.family_name.as_ref().filter(|n| **n != user.family_name).map(|_| "family_name"),
+        new.is_admin
+            .filter(|a| *a != user.is_admin)
+            .map(|_| "is_admin"),
+        new.given_name
+            .as_ref()
+            .filter(|n| **n != user.given_name)
+            .map(|_| "given_name"),
+        new.family_name
+            .as_ref()
+            .filter(|n| **n != user.family_name)
+            .map(|_| "family_name"),
     ]
     .into_iter()
     .flatten()
@@ -733,7 +752,9 @@ async fn get_user_activity(
     _admin: AdminUser,
     path: Path<Uuid>,
 ) -> Result<HttpResponse, ApiError> {
-    let user = db::find_user_by_id(&state.pool, *path).await?.ok_or(ApiError::NotFound)?;
+    let user = db::find_user_by_id(&state.pool, *path)
+        .await?
+        .ok_or(ApiError::NotFound)?;
     let entries = db::list_user_activity(&state.pool, user.id, &user.username, 50).await?;
     Ok(HttpResponse::Ok().json(entries))
 }

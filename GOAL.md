@@ -1,8 +1,8 @@
-# GOAL — Four TODO items for Service Break
+# GOAL — Four TODO items for Coffee Breaks
 
 ## Objective
 
-Implement the four outstanding TODO items (not backlog) on the Service Break
+Implement the four outstanding TODO items (not backlog) on the Coffee Breaks
 Rust/Yew/Actix PWA: user name fields, revised invite limits, invite revocation,
 and place sharing.
 
@@ -34,7 +34,7 @@ CI/CD changes, deployment scripts, or tests for unrelated endpoints.
 
 ### M4 — Share place URI
 - Backend: no changes needed; share URL is client-side only (`/place/{id}`).
-- Frontend: Add a "Share" button to the detail view action row (between "Map" and "Rate"). Uses `navigator.share()` with text like "{name} on Service Break — {url}" if available, falls back to clipboard copy. Shows toast "Link copied" or "Opening share…".
+- Frontend: Add a "Share" button to the detail view action row (between "Map" and "Rate"). Uses `navigator.share()` with text like "{name} on Coffee Breaks — {url}" if available, falls back to clipboard copy. Shows toast "Link copied" or "Opening share…".
 
 ## Completion criteria
 

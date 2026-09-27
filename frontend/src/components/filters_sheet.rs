@@ -57,12 +57,24 @@ pub fn filters_sheet(props: &FiltersSheetProps) -> Html {
 
     type Toggle = (&'static str, &'static str, bool, fn(&mut Filters));
     let toggles: [Toggle; 3] = [
-        ("Clean spots only (4.0+)", "mop", props.filters.clean_only,
-            |f| f.clean_only = !f.clean_only),
-        ("Has parking", "local_parking", props.filters.has_parking,
-            |f| f.has_parking = !f.has_parking),
-        ("No purchase required", "money_off", props.filters.no_purchase,
-            |f| f.no_purchase = !f.no_purchase),
+        (
+            "Clean spots only (4.0+)",
+            "mop",
+            props.filters.clean_only,
+            |f| f.clean_only = !f.clean_only,
+        ),
+        (
+            "Has parking",
+            "local_parking",
+            props.filters.has_parking,
+            |f| f.has_parking = !f.has_parking,
+        ),
+        (
+            "No purchase required",
+            "money_off",
+            props.filters.no_purchase,
+            |f| f.no_purchase = !f.no_purchase,
+        ),
     ];
 
     let on_radius = {

@@ -18,7 +18,12 @@ enum Door {
 }
 
 impl Door {
-    const ALL: [Door; 4] = [Door::AtEntrance, Door::ShortWalk, Door::Back, Door::Upstairs];
+    const ALL: [Door; 4] = [
+        Door::AtEntrance,
+        Door::ShortWalk,
+        Door::Back,
+        Door::Upstairs,
+    ];
 
     fn label(self) -> &'static str {
         match self {
@@ -87,7 +92,11 @@ impl Form {
     /// A blank form with the name and location filled in from a resolved
     /// Google Maps link.
     fn prefilled(m: &MapsLinkResult) -> Self {
-        Form { name: m.name.clone(), address: shared::fmt_latlng(m.lat, m.lng), ..Form::default() }
+        Form {
+            name: m.name.clone(),
+            address: shared::fmt_latlng(m.lat, m.lng),
+            ..Form::default()
+        }
     }
 }
 
@@ -157,7 +166,7 @@ pub fn add_form(props: &AddFormProps) -> Html {
         };
     }
 
-    let set =|f: &UseStateHandle<Form>, update: fn(&mut Form, String)| {
+    let set = |f: &UseStateHandle<Form>, update: fn(&mut Form, String)| {
         let f = f.clone();
         Callback::from(move |value: String| {
             let mut next = (*f).clone();

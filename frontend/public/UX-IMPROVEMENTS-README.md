@@ -1,6 +1,6 @@
-# Service Break UX Improvements
+# Coffee Breaks UX Improvements
 
-This directory contains comprehensive UX improvement analysis and recommendations for the Service Break app.
+This directory contains comprehensive UX improvement analysis and recommendations for the Coffee Breaks app.
 
 ## Files Included
 

@@ -1,4 +1,4 @@
-# Service Break — Frontend Style Guide
+# Coffee Breaks — Frontend Style Guide
 
 Reference for adding or modifying UI in the Yew frontend. Covers design tokens, layout rules, and component patterns. The full visual spec is in `styles-audit.md`.
 

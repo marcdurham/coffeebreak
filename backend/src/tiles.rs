@@ -50,7 +50,10 @@ async fn fetch_tile(
 fn tile_response(body: Vec<u8>) -> HttpResponse {
     HttpResponse::Ok()
         .content_type("image/png")
-        .insert_header(("Cache-Control", format!("public, max-age={BROWSER_MAX_AGE_SECS}")))
+        .insert_header((
+            "Cache-Control",
+            format!("public, max-age={BROWSER_MAX_AGE_SECS}"),
+        ))
         .body(body)
 }
 
@@ -61,7 +64,9 @@ async fn get_tile(
 ) -> Result<HttpResponse, ApiError> {
     let (z, x, y) = path.into_inner();
     if !valid_tile(z, x, y) {
-        return Err(ApiError::BadRequest("tile coordinates out of range".to_owned()));
+        return Err(ApiError::BadRequest(
+            "tile coordinates out of range".to_owned(),
+        ));
     }
 
     let cached = state.tile_cache.get(z, x, y).await;
@@ -71,7 +76,13 @@ async fn get_tile(
             return Ok(tile_response(tile.body.clone()));
         }
     }
-    tracing::debug!(z, x, y, stale = cached.is_some(), "tile cache miss; fetching upstream");
+    tracing::debug!(
+        z,
+        x,
+        y,
+        stale = cached.is_some(),
+        "tile cache miss; fetching upstream"
+    );
 
     match fetch_tile(&state.http, &state.tile_url, z, x, y).await {
         Ok(body) => {

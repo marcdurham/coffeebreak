@@ -108,9 +108,13 @@ pub fn invite_view(props: &InviteViewProps) -> Html {
         Callback::from(move |_| {
             let Some(c) = (*code).clone() else { return };
             let text =
-                format!("Join me on Service Break — use code {c} to find clean bathrooms nearby.");
+                format!("Join me on Coffee Breaks — use code {c} to find clean bathrooms nearby.");
             let shared = glue::sb_share_invite(&text, &c);
-            let msg = if shared { "Opening share…" } else { "Invite link copied" };
+            let msg = if shared {
+                "Opening share…"
+            } else {
+                "Invite link copied"
+            };
             toast.emit(msg.to_owned());
             finish_send(c, name.clone(), code.clone(), toast.clone());
         })

@@ -1,4 +1,4 @@
-# Progress — Service Break Loop
+# Progress — Coffee Breaks Loop
 
 ## Current state — ALL COMPLETE ✅
 

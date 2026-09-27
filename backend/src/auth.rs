@@ -66,7 +66,9 @@ impl FromRequest for AdminUser {
             if user.is_admin {
                 Ok(AdminUser(user))
             } else {
-                Err(ApiError::Forbidden("that needs an admin account".to_owned()))
+                Err(ApiError::Forbidden(
+                    "that needs an admin account".to_owned(),
+                ))
             }
         })
     }
@@ -91,8 +93,8 @@ impl FromRequest for AuthUser {
         Box::pin(async move {
             let state =
                 state.ok_or_else(|| ApiError::Internal("AppState not configured".to_owned()))?;
-            let token = token
-                .ok_or_else(|| ApiError::Unauthorized("sign in to do that".to_owned()))?;
+            let token =
+                token.ok_or_else(|| ApiError::Unauthorized("sign in to do that".to_owned()))?;
             db::session_user(&state.pool, &token)
                 .await?
                 .ok_or_else(|| ApiError::Unauthorized("session expired — sign in again".to_owned()))
@@ -113,7 +115,11 @@ pub fn hash_password(password: &str) -> Result<String, ApiError> {
 
 fn verify_password(password: &str, hash: &str) -> bool {
     PasswordHash::new(hash)
-        .map(|parsed| Argon2::default().verify_password(password.as_bytes(), &parsed).is_ok())
+        .map(|parsed| {
+            Argon2::default()
+                .verify_password(password.as_bytes(), &parsed)
+                .is_ok()
+        })
         .unwrap_or(false)
 }
 
@@ -143,7 +149,9 @@ async fn warn_if_brute_force(pool: &sqlx::PgPool, user_id: Uuid, username: &str)
             );
         }
         Ok(_) => {}
-        Err(e) => tracing::warn!(error = %e, user_id = %user_id, "failed to check recent failed logins"),
+        Err(e) => {
+            tracing::warn!(error = %e, user_id = %user_id, "failed to check recent failed logins")
+        }
     }
 }
 
@@ -184,7 +192,9 @@ async fn register(
     validate_password(&creds.password).map_err(|e| ApiError::BadRequest(e.to_owned()))?;
     let invite_code = creds.invite_code.trim().to_owned();
     if invite_code.is_empty() {
-        return Err(ApiError::BadRequest("an invite code is required to register".to_owned()));
+        return Err(ApiError::BadRequest(
+            "an invite code is required to register".to_owned(),
+        ));
     }
 
     let password = creds.password;
@@ -216,8 +226,16 @@ async fn login(state: Data<AppState>, body: Json<Credentials>) -> Result<HttpRes
         // Google-only account: no password to check against. Same generic
         // error as a wrong password, so this endpoint can't be used to
         // probe which accounts exist or how they sign in.
-        db::record_activity(&state.pool, user_id, "failed_login", "", "", "", Some(user_id))
-            .await?;
+        db::record_activity(
+            &state.pool,
+            user_id,
+            "failed_login",
+            "",
+            "",
+            "",
+            Some(user_id),
+        )
+        .await?;
         tracing::warn!(user_id = %user_id, username = %user.username, reason = "google-only account", "login failed");
         warn_if_brute_force(&state.pool, user_id, &user.username).await;
         return Err(bad());
@@ -225,8 +243,16 @@ async fn login(state: Data<AppState>, body: Json<Credentials>) -> Result<HttpRes
     let password = creds.password;
     let ok = run_blocking(move || Ok(verify_password(&password, &hash))).await?;
     if !ok {
-        db::record_activity(&state.pool, user_id, "failed_login", "", "", "", Some(user_id))
-            .await?;
+        db::record_activity(
+            &state.pool,
+            user_id,
+            "failed_login",
+            "",
+            "",
+            "",
+            Some(user_id),
+        )
+        .await?;
         tracing::warn!(user_id = %user_id, username = %user.username, reason = "wrong password", "login failed");
         warn_if_brute_force(&state.pool, user_id, &user.username).await;
         return Err(bad());
@@ -352,15 +378,21 @@ async fn change_password(
     };
     let ok = run_blocking(move || Ok(verify_password(&creds.current_password, &hash))).await?;
     if !ok {
-        return Err(ApiError::BadRequest(
-            "current password is wrong".to_owned(),
-        ));
+        return Err(ApiError::BadRequest("current password is wrong".to_owned()));
     }
 
     let new_hash = run_blocking(move || hash_password(&creds.new_password)).await?;
     db::update_user_password(&state.pool, user.id, &new_hash).await?;
-    db::record_activity(&state.pool, user.id, "profile_change", "password", "", "", Some(user.id))
-        .await?;
+    db::record_activity(
+        &state.pool,
+        user.id,
+        "profile_change",
+        "password",
+        "",
+        "",
+        Some(user.id),
+    )
+    .await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -387,8 +419,16 @@ async fn set_password(
 
     let new_hash = run_blocking(move || hash_password(&body.new_password)).await?;
     db::update_user_password(&state.pool, user.id, &new_hash).await?;
-    db::record_activity(&state.pool, user.id, "profile_change", "password", "", "", Some(user.id))
-        .await?;
+    db::record_activity(
+        &state.pool,
+        user.id,
+        "profile_change",
+        "password",
+        "",
+        "",
+        Some(user.id),
+    )
+    .await?;
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -456,8 +496,16 @@ async fn delete_invite(
     if let db::InvitationRemoval::Deleted { name } =
         db::revoke_invitation(&state.pool, user.id, &code).await?
     {
-        db::record_activity(&state.pool, user.id, "invite_deleted", "", &name, "", Some(user.id))
-            .await?;
+        db::record_activity(
+            &state.pool,
+            user.id,
+            "invite_deleted",
+            "",
+            &name,
+            "",
+            Some(user.id),
+        )
+        .await?;
     }
     Ok(HttpResponse::NoContent().finish())
 }

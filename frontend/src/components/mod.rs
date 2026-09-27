@@ -1,8 +1,8 @@
 pub mod account_view;
 pub mod activity_view;
-pub mod change_password_view;
 pub mod add_form;
 pub mod admin_view;
+pub mod change_password_view;
 pub mod detail_view;
 pub mod edit_user_view;
 pub mod edit_view;
@@ -18,5 +18,5 @@ pub mod register_view;
 pub mod saved_view;
 pub mod share_target_view;
 pub mod tab_bar;
-pub mod users_view;
 pub mod ui;
+pub mod users_view;

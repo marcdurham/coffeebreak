@@ -1,4 +1,4 @@
-// Service Break service worker: network-first for the app shell so dev
+// Coffee Breaks service worker: network-first for the app shell so dev
 // rebuilds show up, cache fallback for offline. API and map tiles are never
 // cached here.
 const CACHE = 'sb-shell-v1';

@@ -115,7 +115,7 @@ stays disabled — no partial/broken state):
 - `GOOGLE_CLIENT_ID` — the Client ID from step 1.
 - `GOOGLE_CLIENT_SECRET` — the Client secret from step 1.
 - `GOOGLE_REDIRECT_URI` — the exact redirect URI you registered, e.g.
-  `https://servicebreak.example.com/api/auth/google/callback`. The frontend
+  `https://coffeebreaks.fyi/api/auth/google/callback`. The frontend
   origin is derived from this (strip the `/api/auth/google/callback` suffix),
   so it must be the same origin the app is actually served from.
 

@@ -105,13 +105,20 @@ impl TileCache {
             index.touch(key, bytes);
         }
 
-        let cache = Self { dir, max_bytes, index: Mutex::new(index) };
+        let cache = Self {
+            dir,
+            max_bytes,
+            index: Mutex::new(index),
+        };
         cache.evict_and_delete();
         Ok(cache)
     }
 
     pub fn tile_path(&self, z: u32, x: u32, y: u32) -> PathBuf {
-        self.dir.join(z.to_string()).join(x.to_string()).join(format!("{y}.png"))
+        self.dir
+            .join(z.to_string())
+            .join(x.to_string())
+            .join(format!("{y}.png"))
     }
 
     /// The cached tile, if present on disk, marking it most recently used.
@@ -152,14 +159,17 @@ impl TileCache {
             return Err(err);
         }
 
-        self.lock_index().touch(TileKey { z, x, y }, body.len() as u64);
+        self.lock_index()
+            .touch(TileKey { z, x, y }, body.len() as u64);
         self.evict_and_delete();
         Ok(())
     }
 
     /// Never hold this across an `.await`.
     fn lock_index(&self) -> std::sync::MutexGuard<'_, LruIndex> {
-        self.index.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+        self.index
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Drops least-recently-used tiles from the index and disk until the
@@ -230,7 +240,10 @@ mod tests {
     use super::*;
 
     fn temp_cache_dir() -> PathBuf {
-        std::env::temp_dir().join(format!("sb-tile-cache-test-{}", uuid::Uuid::new_v4().simple()))
+        std::env::temp_dir().join(format!(
+            "sb-tile-cache-test-{}",
+            uuid::Uuid::new_v4().simple()
+        ))
     }
 
     #[tokio::test]
@@ -241,7 +254,10 @@ mod tests {
         let tile = cache.get(3, 1, 2).await.expect("tile should be cached");
         assert_eq!(tile.body, b"png bytes");
         assert!(tile.fresh);
-        assert!(cache.get(3, 1, 3).await.is_none(), "different tile is a miss");
+        assert!(
+            cache.get(3, 1, 3).await.is_none(),
+            "different tile is a miss"
+        );
     }
 
     #[tokio::test]
@@ -256,8 +272,14 @@ mod tests {
         cache.insert(1, 1, 0, b"cccc").await.unwrap();
 
         assert!(cache.get(1, 0, 1).await.is_none(), "LRU tile evicted");
-        assert!(!cache.tile_path(1, 0, 1).exists(), "evicted file removed from disk");
-        assert!(cache.get(1, 0, 0).await.is_some(), "recently used tile kept");
+        assert!(
+            !cache.tile_path(1, 0, 1).exists(),
+            "evicted file removed from disk"
+        );
+        assert!(
+            cache.get(1, 0, 0).await.is_some(),
+            "recently used tile kept"
+        );
         assert!(cache.get(1, 1, 0).await.is_some(), "new tile kept");
     }
 
@@ -286,12 +308,16 @@ mod tests {
             .write(true)
             .open(dir.join("1").join("0").join("0.png"))
             .unwrap();
-        f.set_modified(SystemTime::now() - Duration::from_secs(3600)).unwrap();
+        f.set_modified(SystemTime::now() - Duration::from_secs(3600))
+            .unwrap();
 
         // Reopen over the same dir with a budget of one 5-byte tile: the
         // older tile must be the one evicted at startup.
         let cache = TileCache::open(&dir, 5).unwrap();
-        assert!(cache.get(1, 0, 0).await.is_none(), "older tile evicted on reopen");
+        assert!(
+            cache.get(1, 0, 0).await.is_none(),
+            "older tile evicted on reopen"
+        );
         assert_eq!(cache.get(1, 0, 1).await.expect("kept").body, b"newer");
     }
 
@@ -299,8 +325,12 @@ mod tests {
     async fn tile_older_than_ttl_reads_as_stale() {
         let cache = TileCache::open(temp_cache_dir(), 1024).unwrap();
         cache.insert(3, 1, 2, b"old png").await.unwrap();
-        let f = std::fs::File::options().write(true).open(cache.tile_path(3, 1, 2)).unwrap();
-        f.set_modified(SystemTime::now() - (TILE_TTL + Duration::from_secs(60))).unwrap();
+        let f = std::fs::File::options()
+            .write(true)
+            .open(cache.tile_path(3, 1, 2))
+            .unwrap();
+        f.set_modified(SystemTime::now() - (TILE_TTL + Duration::from_secs(60)))
+            .unwrap();
 
         let tile = cache.get(3, 1, 2).await.expect("stale tiles stay readable");
         assert!(!tile.fresh);

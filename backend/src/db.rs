@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
 use shared::{
     ActivityEntry, Amenity, BBox, Invitation, InviteStatus, InvitesOverview, OverpassPoi, Parking,
-    PlaceDetail, PlaceEdit, PlaceSource, PlaceSummary, PlaceType, PlacesQuery, Requirement,
-    Review, SortBy, UserSummary, INVITES_PER_DAY_NEW, INVITES_PER_DAY_OLD_AGE, INVITE_EXPIRY_DAYS,
+    PlaceDetail, PlaceEdit, PlaceSource, PlaceSummary, PlaceType, PlacesQuery, Requirement, Review,
+    SortBy, UserSummary, INVITES_PER_DAY_NEW, INVITES_PER_DAY_OLD_AGE, INVITE_EXPIRY_DAYS,
 };
 use sqlx::postgres::PgRow;
 use sqlx::{Acquire, PgExecutor, PgPool, Postgres, QueryBuilder, Row};
@@ -19,7 +19,9 @@ pub async fn ensure_seeded(pool: &PgPool) -> Result<(), sqlx::Error> {
         .fetch_one(pool)
         .await?;
     if count == 0 {
-        sqlx::raw_sql(include_str!("../seed.sql")).execute(pool).await?;
+        sqlx::raw_sql(include_str!("../seed.sql"))
+            .execute(pool)
+            .await?;
         tracing::info!("seeded demo places");
     }
     Ok(())
@@ -64,9 +66,9 @@ fn summary_from_row(row: &PgRow) -> Result<PlaceSummary, ApiError> {
         purchase_required: purchase_required.parse::<Requirement>().map_err(|()| {
             ApiError::BadRequest(format!("unknown requirement {purchase_required:?}"))
         })?,
-        code_required: code_required.parse::<Requirement>().map_err(|()| {
-            ApiError::BadRequest(format!("unknown requirement {code_required:?}"))
-        })?,
+        code_required: code_required
+            .parse::<Requirement>()
+            .map_err(|()| ApiError::BadRequest(format!("unknown requirement {code_required:?}")))?,
         amenities: amenities.iter().filter_map(|a| a.parse().ok()).collect(),
         clean_avg: row.try_get("clean_avg")?,
         coffee_avg: row.try_get("coffee_avg")?,
@@ -178,7 +180,11 @@ pub async fn get_place(
     qb.push(" WHERE p.id = ").push_bind(id);
     qb.push(" AND p.deleted_at IS NULL");
     qb.push(" GROUP BY p.id");
-    let row = qb.build().fetch_optional(pool).await?.ok_or(ApiError::NotFound)?;
+    let row = qb
+        .build()
+        .fetch_optional(pool)
+        .await?
+        .ok_or(ApiError::NotFound)?;
     let summary = summary_from_row(&row)?;
 
     let extra = sqlx::query("SELECT door_note, hours FROM places WHERE id = $1")
@@ -366,7 +372,11 @@ pub async fn update_place(
         }
     };
     diff("name", row.try_get("name")?, f.name.clone());
-    diff("place_type", row.try_get("place_type")?, f.place_type.to_string());
+    diff(
+        "place_type",
+        row.try_get("place_type")?,
+        f.place_type.to_string(),
+    );
     if (old_lat - f.lat).abs() > 1e-9 || (old_lng - f.lng).abs() > 1e-9 {
         diff(
             "location",
@@ -375,7 +385,11 @@ pub async fn update_place(
         );
     }
     diff("address", row.try_get("address")?, f.address.clone());
-    diff("door_ft", row.try_get::<i32, _>("door_ft")?.to_string(), f.door_ft.to_string());
+    diff(
+        "door_ft",
+        row.try_get::<i32, _>("door_ft")?.to_string(),
+        f.door_ft.to_string(),
+    );
     diff("door_note", row.try_get("door_note")?, f.door_note.clone());
     diff("parking", row.try_get("parking")?, f.parking.to_string());
     diff(
@@ -383,9 +397,21 @@ pub async fn update_place(
         row.try_get("purchase_required")?,
         f.purchase_required.to_string(),
     );
-    diff("code_required", row.try_get("code_required")?, f.code_required.to_string());
-    diff("amenities", amenities_text(&old_amenities), amenities_text(&new_amenities));
-    diff("hours", old_hours.unwrap_or_default(), f.hours.clone().unwrap_or_default());
+    diff(
+        "code_required",
+        row.try_get("code_required")?,
+        f.code_required.to_string(),
+    );
+    diff(
+        "amenities",
+        amenities_text(&old_amenities),
+        amenities_text(&new_amenities),
+    );
+    diff(
+        "hours",
+        old_hours.unwrap_or_default(),
+        f.hours.clone().unwrap_or_default(),
+    );
 
     if changes.is_empty() {
         return Ok(0);
@@ -549,8 +575,14 @@ pub async fn list_overpass_pois(
     let mut qb = QueryBuilder::new("SELECT id, name, place_type, lat, lng, address, ");
     push_poi_distance_expr(&mut qb, center_lat, center_lng);
     qb.push(" AS distance_mi FROM overpass_pois WHERE app_place_id IS NULL");
-    qb.push(" AND lat BETWEEN ").push_bind(bbox.min_lat).push(" AND ").push_bind(bbox.max_lat);
-    qb.push(" AND lng BETWEEN ").push_bind(bbox.min_lng).push(" AND ").push_bind(bbox.max_lng);
+    qb.push(" AND lat BETWEEN ")
+        .push_bind(bbox.min_lat)
+        .push(" AND ")
+        .push_bind(bbox.max_lat);
+    qb.push(" AND lng BETWEEN ")
+        .push_bind(bbox.min_lng)
+        .push(" AND ")
+        .push_bind(bbox.max_lng);
     if let Some(search) = q.map(str::trim).filter(|s| !s.is_empty()) {
         qb.push(" AND name ILIKE ").push_bind(like_pattern(search));
     }
@@ -590,11 +622,12 @@ pub struct CachedPoiRow {
 }
 
 pub async fn get_overpass_poi_row(pool: &PgPool, poi_id: &str) -> Result<CachedPoiRow, ApiError> {
-    let row = sqlx::query("SELECT name, place_type, lat, lng, address FROM overpass_pois WHERE id = $1")
-        .bind(poi_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or(ApiError::NotFound)?;
+    let row =
+        sqlx::query("SELECT name, place_type, lat, lng, address FROM overpass_pois WHERE id = $1")
+            .bind(poi_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or(ApiError::NotFound)?;
     let place_type: String = row.try_get("place_type")?;
     Ok(CachedPoiRow {
         name: row.try_get("name")?,
@@ -618,13 +651,12 @@ pub async fn promote_overpass_poi(
     insert: &InsertPlace,
 ) -> Result<(Uuid, bool), ApiError> {
     let mut tx = pool.begin().await?;
-    let existing: Option<Uuid> = sqlx::query_scalar(
-        "SELECT app_place_id FROM overpass_pois WHERE id = $1 FOR UPDATE",
-    )
-    .bind(poi_id)
-    .fetch_optional(&mut *tx)
-    .await?
-    .ok_or(ApiError::NotFound)?;
+    let existing: Option<Uuid> =
+        sqlx::query_scalar("SELECT app_place_id FROM overpass_pois WHERE id = $1 FOR UPDATE")
+            .bind(poi_id)
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or(ApiError::NotFound)?;
 
     if let Some(place_id) = existing {
         tx.commit().await?;
@@ -723,9 +755,10 @@ pub async fn list_user_activity(
         let (kind, summary) = match activity_type.as_str() {
             "login" => ("login", "Signed in".to_owned()),
             "failed_login" => ("failed_login", "Failed sign-in attempt".to_owned()),
-            "invite_deleted" => {
-                ("invite_change", format!("Removed invitation for {old_value}"))
-            }
+            "invite_deleted" => (
+                "invite_change",
+                format!("Removed invitation for {old_value}"),
+            ),
             _ if field == "password" => ("profile_change", "Password reset".to_owned()),
             _ if field == "is_admin" => (
                 "profile_change",
@@ -926,7 +959,9 @@ pub async fn create_oauth_state(
     mode: &str,
     invite_code: &str,
 ) -> Result<(), ApiError> {
-    sqlx::query("DELETE FROM oauth_states WHERE expires_at < now()").execute(pool).await?;
+    sqlx::query("DELETE FROM oauth_states WHERE expires_at < now()")
+        .execute(pool)
+        .await?;
     sqlx::query(
         "INSERT INTO oauth_states (state, mode, invite_code, expires_at) \
          VALUES ($1, $2, $3, now() + make_interval(mins => $4))",
@@ -950,7 +985,9 @@ pub async fn create_oauth_link_state(
     state: &str,
     user_id: Uuid,
 ) -> Result<(), ApiError> {
-    sqlx::query("DELETE FROM oauth_states WHERE expires_at < now()").execute(pool).await?;
+    sqlx::query("DELETE FROM oauth_states WHERE expires_at < now()")
+        .execute(pool)
+        .await?;
     sqlx::query(
         "INSERT INTO oauth_states (state, mode, invite_code, user_id, expires_at) \
          VALUES ($1, 'link', '', $2, now() + make_interval(mins => $3))",
@@ -982,7 +1019,11 @@ pub async fn take_oauth_state(
         if !still_valid {
             return None;
         }
-        Some((r.try_get("mode").ok()?, r.try_get("invite_code").ok()?, r.try_get("user_id").ok()?))
+        Some((
+            r.try_get("mode").ok()?,
+            r.try_get("invite_code").ok()?,
+            r.try_get("user_id").ok()?,
+        ))
     }))
 }
 
@@ -1261,10 +1302,7 @@ pub async fn update_user_names(
 }
 
 /// Looks a user up by id. Used when the caller already has an authenticated /// identity but needs to read stored fields (e.g. the password hash).
-pub async fn find_user_by_id(
-    pool: &PgPool,
-    id: Uuid,
-) -> Result<Option<UserRow>, ApiError> {
+pub async fn find_user_by_id(pool: &PgPool, id: Uuid) -> Result<Option<UserRow>, ApiError> {
     let row = sqlx::query(
         "SELECT id, username, password_hash, is_admin, given_name, family_name FROM users WHERE id = $1",
     )
@@ -1329,12 +1367,13 @@ pub async fn create_invitation(
 
     for _ in 0..5 {
         let code = new_invite_code();
-        let res = sqlx::query("INSERT INTO invitations (code, inviter_id, name) VALUES ($1, $2, $3)")
-            .bind(&code)
-            .bind(inviter_id)
-            .bind(name)
-            .execute(pool)
-            .await;
+        let res =
+            sqlx::query("INSERT INTO invitations (code, inviter_id, name) VALUES ($1, $2, $3)")
+                .bind(&code)
+                .bind(inviter_id)
+                .bind(name)
+                .execute(pool)
+                .await;
         match res {
             Ok(_) => {
                 return Ok(Invitation {
@@ -1348,7 +1387,9 @@ pub async fn create_invitation(
             Err(e) => return Err(e.into()),
         }
     }
-    Err(ApiError::Internal("could not generate a unique invite code".to_owned()))
+    Err(ApiError::Internal(
+        "could not generate a unique invite code".to_owned(),
+    ))
 }
 
 /// Everything the account page shows about invitations: who invited this
@@ -1403,7 +1444,12 @@ pub async fn invites_overview(pool: &PgPool, user_id: Uuid) -> Result<InvitesOve
         None => (None, None, None),
     };
 
-    Ok(InvitesOverview { invited_by, my_invite_code, my_invite_name, invites })
+    Ok(InvitesOverview {
+        invited_by,
+        my_invite_code,
+        my_invite_name,
+        invites,
+    })
 }
 
 /// Renames an invitation. Allowed for the inviter while the code is still
@@ -1465,7 +1511,11 @@ pub async fn revoke_invitation(
     .await?;
     if let Some(row) = row {
         let name: String = row.try_get("name")?;
-        let name = if name.trim().is_empty() { code.to_owned() } else { name };
+        let name = if name.trim().is_empty() {
+            code.to_owned()
+        } else {
+            name
+        };
         return Ok(InvitationRemoval::Deleted { name });
     }
     let res = sqlx::query(
@@ -1521,7 +1571,10 @@ pub async fn create_session(pool: &PgPool, token: &str, user_id: Uuid) -> Result
 }
 
 pub async fn delete_session(pool: &PgPool, token: &str) -> Result<(), ApiError> {
-    sqlx::query("DELETE FROM sessions WHERE token = $1").bind(token).execute(pool).await?;
+    sqlx::query("DELETE FROM sessions WHERE token = $1")
+        .bind(token)
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
@@ -1579,36 +1632,31 @@ pub async fn unsave_place(pool: &PgPool, device_id: &str, place_id: Uuid) -> Res
 /// Soft-deletes a place: marks `deleted_at` and `deleted_by`. The place
 /// remains queryable by id (so the detail page can still render after the
 /// delete), but drops out of list/saved results.
-pub async fn delete_place(
-    pool: &PgPool,
-    id: Uuid,
-    user_id: Uuid,
-) -> Result<(), ApiError> {
-    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM places WHERE id = $1 AND deleted_at IS NULL)")
-        .bind(id)
-        .fetch_one(pool)
-        .await?;
+pub async fn delete_place(pool: &PgPool, id: Uuid, user_id: Uuid) -> Result<(), ApiError> {
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM places WHERE id = $1 AND deleted_at IS NULL)",
+    )
+    .bind(id)
+    .fetch_one(pool)
+    .await?;
     if !exists {
         return Err(ApiError::NotFound);
     }
-    sqlx::query(
-        "UPDATE places SET deleted_at = now(), deleted_by = $2 WHERE id = $1",
-    )
-    .bind(id)
-    .bind(user_id)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE places SET deleted_at = now(), deleted_by = $2 WHERE id = $1")
+        .bind(id)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
 /// All accounts — admin-only. Ids are returned as strings so the frontend
 /// doesn't have to pull in uuid for a read-only listing.
 pub async fn list_users(pool: &PgPool) -> Result<Vec<UserSummary>, ApiError> {
-    let rows = sqlx::query(
-        "SELECT id, username, is_admin, created_at FROM users ORDER BY created_at, id",
-    )
-    .fetch_all(pool)
-    .await?;
+    let rows =
+        sqlx::query("SELECT id, username, is_admin, created_at FROM users ORDER BY created_at, id")
+            .fetch_all(pool)
+            .await?;
     Ok(rows
         .into_iter()
         .map(|r| {

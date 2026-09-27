@@ -21,7 +21,11 @@ pub fn time_ago(then: DateTime<Utc>, now: DateTime<Utc>) -> String {
 }
 
 fn plural(n: i64) -> &'static str {
-    if n == 1 { "" } else { "s" }
+    if n == 1 {
+        ""
+    } else {
+        "s"
+    }
 }
 
 #[cfg(test)]

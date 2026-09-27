@@ -89,7 +89,7 @@ pub fn edit_user_view(props: &EditUserViewProps) -> Html {
 
     // All callbacks must be defined before any early return to satisfy Yew's
     // hook ordering rules.
-    
+
     // Back button: navigate with window.location.href instead of navigator.push()
     // because Yew's client-side router can fail to re-render components when
     // navigating between sibling routes (both match `/users*`).

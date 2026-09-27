@@ -13,12 +13,11 @@ use yew_router::prelude::*;
 
 use crate::components::account_view::AccountView;
 use crate::components::activity_view::ActivityView;
-use crate::components::change_password_view::ChangePasswordView;
 use crate::components::add_form::AddForm;
 use crate::components::admin_view::AdminView;
-use crate::components::edit_user_view::EditUserView;
-use crate::components::users_view::UsersView;
+use crate::components::change_password_view::ChangePasswordView;
 use crate::components::detail_view::DetailView;
+use crate::components::edit_user_view::EditUserView;
 use crate::components::filters_sheet::{FiltersFor, FiltersSheet};
 use crate::components::invite_view::InviteView;
 use crate::components::list_view::ListView;
@@ -30,6 +29,7 @@ use crate::components::register_view::RegisterView;
 use crate::components::saved_view::SavedView;
 use crate::components::share_target_view::ShareTargetView;
 use crate::components::tab_bar::TabBar;
+use crate::components::users_view::UsersView;
 use crate::route::Route;
 use crate::{api, glue};
 
@@ -71,7 +71,10 @@ impl Filters {
     /// the badge this drives sits on the Map view, which has no distance
     /// control.
     pub fn is_active_ignoring_radius(&self) -> bool {
-        Filters { radius_mi: Filters::default().radius_mi, ..self.clone() } != Filters::default()
+        Filters {
+            radius_mi: Filters::default().radius_mi,
+            ..self.clone()
+        } != Filters::default()
     }
 
     /// `apply_radius` is false on the Map view, where the viewport — not the
@@ -247,31 +250,34 @@ pub fn app() -> Html {
         let refresh = refresh.clone();
         let navigator = navigator.clone();
         let show_toast = show_toast.clone();
-        use_effect_with((route, signed_in, *started), move |(route, signed_in, started)| {
-            let Route::PoiEdit { kind, num } = *route else {
-                return;
-            };
-            if !(*signed_in && *started) {
-                return;
-            }
-            let poi_id = format!("{}/{num}", kind.as_str());
-            wasm_bindgen_futures::spawn_local(async move {
-                match api::promote_overpass_poi(&poi_id, &device).await {
-                    Ok(d) => {
-                        let id = d.summary.id;
-                        selected.set(Some(id));
-                        detail.set(Some(d));
-                        edit_on_open.set(true);
-                        refresh.set(refresh.wrapping_add(1));
-                        navigator.replace(&Route::Place { id });
-                    }
-                    Err(msg) => {
-                        show_toast.emit(msg);
-                        navigator.replace(&Route::Map);
-                    }
+        use_effect_with(
+            (route, signed_in, *started),
+            move |(route, signed_in, started)| {
+                let Route::PoiEdit { kind, num } = *route else {
+                    return;
+                };
+                if !(*signed_in && *started) {
+                    return;
                 }
-            });
-        });
+                let poi_id = format!("{}/{num}", kind.as_str());
+                wasm_bindgen_futures::spawn_local(async move {
+                    match api::promote_overpass_poi(&poi_id, &device).await {
+                        Ok(d) => {
+                            let id = d.summary.id;
+                            selected.set(Some(id));
+                            detail.set(Some(d));
+                            edit_on_open.set(true);
+                            refresh.set(refresh.wrapping_add(1));
+                            navigator.replace(&Route::Place { id });
+                        }
+                        Err(msg) => {
+                            show_toast.emit(msg);
+                            navigator.replace(&Route::Map);
+                        }
+                    }
+                });
+            },
+        );
     }
 
     // Drop a stored session the server no longer accepts (expired or
@@ -379,17 +385,20 @@ pub fn app() -> Html {
         let saved_ids = saved_ids.clone();
         let saved_places = saved_places.clone();
         let device = device.clone();
-        use_effect_with((*started, *origin, *refresh), move |(started, origin, _)| {
-            if *started {
-                let origin = *origin;
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Ok(list) = api::fetch_saved(&device, origin).await {
-                        saved_ids.set(list.iter().map(|p| p.id).collect());
-                        saved_places.set(list);
-                    }
-                });
-            }
-        });
+        use_effect_with(
+            (*started, *origin, *refresh),
+            move |(started, origin, _)| {
+                if *started {
+                    let origin = *origin;
+                    wasm_bindgen_futures::spawn_local(async move {
+                        if let Ok(list) = api::fetch_saved(&device, origin).await {
+                            saved_ids.set(list.iter().map(|p| p.id).collect());
+                            saved_places.set(list);
+                        }
+                    });
+                }
+            },
+        );
     }
 
     let on_start = {

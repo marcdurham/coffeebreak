@@ -45,7 +45,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tile_cache_dir =
         std::env::var("TILE_CACHE_DIR").unwrap_or_else(|_| "./tile-cache".to_owned());
     let tile_cache_max_mb: u64 = std::env::var("TILE_CACHE_MAX_MB")
-        .map(|v| v.parse().expect("TILE_CACHE_MAX_MB must be a whole number of megabytes"))
+        .map(|v| {
+            v.parse()
+                .expect("TILE_CACHE_MAX_MB must be a whole number of megabytes")
+        })
         .unwrap_or(512);
     let tile_cache =
         backend::tile_cache::TileCache::open(&tile_cache_dir, tile_cache_max_mb * 1024 * 1024)?;
