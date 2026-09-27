@@ -180,6 +180,13 @@ button { cursor: pointer; }
   box-shadow: 0 12px 28px -10px rgba(231, 184, 119, .7);
 }
 .onb-cta .mi { font-size: 21px; }
+.onb-alt {
+  width: 100%; margin-top: 10px; border: 1.5px solid rgba(246, 236, 217, .35); border-radius: 16px;
+  padding: 14px; background: transparent; color: var(--cream);
+  font-size: 15px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.onb-alt .mi { font-size: 20px; color: var(--gold); }
 .onb-note { text-align: center; font-size: 11.5px; color: #a98d70; margin-top: 14px; }
 
 /* ---------- map ---------- */
@@ -341,6 +348,9 @@ button { cursor: pointer; }
 }
 .recenter.above-card { bottom: 298px; }
 .recenter .mi { font-size: 23px; color: #3f7fd6; }
+.recenter.spot { bottom: calc(204px + env(safe-area-inset-bottom)); }
+.recenter.spot.above-card { bottom: 352px; }
+.recenter.spot .mi { color: var(--accent); }
 
 .sel-wrap {
   position: absolute; left: 12px; right: 12px;
@@ -1029,6 +1039,8 @@ button { cursor: pointer; }
 
   /* content sits to the right of the rail */
   .map-screen, .screen, .detail-overlay, .picker-overlay { left: 88px; }
+  /* onboarding has no tab rail beside it */
+  .onb ~ .picker-overlay { left: 0; }
   .picker-head { right: auto; width: 400px; }
   .picker-foot { left: 16px; right: auto; bottom: 20px; width: 400px; }
   .screen { padding-top: 28px; padding-bottom: 48px; }
@@ -1044,6 +1056,7 @@ button { cursor: pointer; }
      clear regardless of whether a place is featured */
   .discover, .discover.above-card { right: 16px; bottom: 16px; }
   .recenter, .recenter.above-card { right: 16px; bottom: 78px; }
+  .recenter.spot, .recenter.spot.above-card { bottom: 132px; }
 
   .hero { height: 240px; }
 

@@ -6,6 +6,8 @@ short description.
 
 ## 2026-09-26
 
+- 22:30 — Location sharing is now optional. Onboarding offers "Use my location" or "Pick a spot on the map instead" (the map picker); without location, distances are measured from the picked spot (stored as `sb_spot`, falling back to downtown Seattle). A new map button re-picks the spot; the locate button opts in to geolocation; the Add form's "Use my current location" now opts in and fills once the location arrives. A failed/denied lookup turns the opt-in back off with a toast. Existing users who already started keep location on.
+
 - 21:55 — Fix PWA blank-screen after deploys: nginx now sends `no-cache` for index.html/sw.js/manifest, long-lived caching for hashed wasm/js/css, and a real 404 (not the SPA index.html) for missing assets; service worker (v2) fetches the shell with `no-store` and never caches an HTML fallback under an asset URL. Added a boot-rescue panel that appears if the app hasn't mounted after load or on a Rust panic, showing error details with Reset & reload (unregisters SW, clears caches).
 
 - 17:24 — Rename the app from Service Break to Coffee Breaks in all user-facing text (page title, PWA manifest, onboarding, share/invite text, admin backup filename) and docs; example domain is now coffeebreaks.fyi. Internal names (DB, containers, crates) unchanged.

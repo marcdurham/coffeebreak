@@ -107,6 +107,9 @@ pub struct AddFormProps {
     /// The user's live location, if they're sharing it (as opposed to
     /// `origin`, which may be a fallback center).
     pub user_location: Option<(f64, f64)>,
+    /// Opts in to geolocation, for "Use my current location" when the user
+    /// hasn't shared it yet; the form fills in once `user_location` arrives.
+    pub on_enable_location: Callback<()>,
     /// Adding a place requires an account; when false the form is replaced
     /// by a sign-in prompt that emits `on_sign_in`.
     pub logged_in: bool,
@@ -129,6 +132,8 @@ pub fn add_form(props: &AddFormProps) -> Html {
     });
     let submitting = use_state(|| false);
     let picking = use_state(|| false);
+    // "Use my current location" was tapped before a location was known.
+    let awaiting_location = use_state(|| false);
 
     {
         let had_prefill = props.prefill.is_some();
@@ -180,18 +185,36 @@ pub fn add_form(props: &AddFormProps) -> Html {
 
     let use_my_location = {
         let form = form.clone();
-        let origin = props.origin;
+        let user_location = props.user_location;
+        let awaiting_location = awaiting_location.clone();
+        let enable_location = props.on_enable_location.clone();
         let toast = props.on_toast.clone();
-        Callback::from(move |_| match origin {
+        Callback::from(move |_| match user_location {
             Some((lat, lng)) => {
                 let mut next = (*form).clone();
                 next.address = shared::fmt_latlng(lat, lng);
                 form.set(next);
                 toast.emit("Using your current location".to_owned());
             }
-            None => toast.emit("Location not available yet".to_owned()),
+            None => {
+                awaiting_location.set(true);
+                enable_location.emit(());
+                toast.emit("Finding your location…".to_owned());
+            }
         })
     };
+    {
+        let form = form.clone();
+        let awaiting_location = awaiting_location.clone();
+        use_effect_with(props.user_location, move |user_location| {
+            if let (true, Some((lat, lng))) = (*awaiting_location, *user_location) {
+                let mut next = (*form).clone();
+                next.address = shared::fmt_latlng(lat, lng);
+                form.set(next);
+                awaiting_location.set(false);
+            }
+        });
+    }
 
     let open_picker = {
         let picking = picking.clone();

@@ -52,6 +52,9 @@ pub struct MapViewProps {
     pub on_open_filters: Callback<()>,
     pub on_toggle_amenity: Callback<Amenity>,
     pub on_recenter: Callback<()>,
+    /// Opens the "Set your spot" picker (point at a location in place of
+    /// sharing one).
+    pub on_pick_spot: Callback<()>,
     /// Fired when the "Discover" button is tapped, flipping `show_unvisited`.
     pub on_toggle_unvisited: Callback<()>,
     /// Fired when the featured card is dismissed -- its close button, or a
@@ -489,6 +492,10 @@ pub fn map_view(props: &MapViewProps) -> Html {
         let cb = props.on_recenter.clone();
         Callback::from(move |_| cb.emit(()))
     };
+    let pick_spot = {
+        let cb = props.on_pick_spot.clone();
+        Callback::from(move |_| cb.emit(()))
+    };
 
     html! {
         <div class="map-screen">
@@ -547,9 +554,19 @@ pub fn map_view(props: &MapViewProps) -> Html {
 
             <button
                 class={if has_card { "recenter above-card" } else { "recenter" }}
+                title="Use my location"
+                aria-label="Use my location"
                 onclick={recenter}
             >
                 <span class="mi">{"my_location"}</span>
+            </button>
+            <button
+                class={if has_card { "recenter spot above-card" } else { "recenter spot" }}
+                title="Set your spot on the map"
+                aria-label="Set your spot on the map"
+                onclick={pick_spot}
+            >
+                <span class="mi">{"edit_location_alt"}</span>
             </button>
 
             if let Some(p) = &*featured_poi {

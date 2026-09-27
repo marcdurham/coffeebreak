@@ -15,6 +15,10 @@ pub struct LocationPickerProps {
     pub user_location: Option<(f64, f64)>,
     pub on_confirm: Callback<(f64, f64)>,
     pub on_cancel: Callback<()>,
+    #[prop_or(AttrValue::Static("Point to the spot"))]
+    pub title: AttrValue,
+    #[prop_or(AttrValue::Static("Tap a street corner or building to drop a pin"))]
+    pub subtitle: AttrValue,
 }
 
 /// Full-screen map overlay for pointing at a spot (a street corner, a
@@ -79,8 +83,8 @@ pub fn location_picker(props: &LocationPickerProps) -> Html {
                     <span class="mi">{"arrow_back"}</span>
                 </button>
                 <div>
-                    <div class="picker-title">{"Point to the spot"}</div>
-                    <div class="picker-sub">{"Tap a street corner or building to drop a pin"}</div>
+                    <div class="picker-title">{props.title.clone()}</div>
+                    <div class="picker-sub">{props.subtitle.clone()}</div>
                 </div>
             </div>
             <div class="picker-foot">

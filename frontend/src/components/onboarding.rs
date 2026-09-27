@@ -2,13 +2,20 @@ use yew::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct OnboardingProps {
-    pub on_start: Callback<()>,
+    /// Opt in to the browser's geolocation.
+    pub on_use_location: Callback<()>,
+    /// Skip geolocation and point at a spot on the map instead.
+    pub on_pick_spot: Callback<()>,
 }
 
 #[function_component(Onboarding)]
 pub fn onboarding(props: &OnboardingProps) -> Html {
-    let onclick = {
-        let cb = props.on_start.clone();
+    let use_location = {
+        let cb = props.on_use_location.clone();
+        Callback::from(move |_| cb.emit(()))
+    };
+    let pick_spot = {
+        let cb = props.on_pick_spot.clone();
         Callback::from(move |_| cb.emit(()))
     };
     html! {
@@ -41,10 +48,15 @@ pub fn onboarding(props: &OnboardingProps) -> Html {
                         <div class="onb-feature-text">{"Directions in one tap"}</div>
                     </div>
                 </div>
-                <button class="onb-cta" {onclick}>
-                    <span class="mi">{"my_location"}</span>{"Enable location & explore"}
+                <button class="onb-cta" onclick={use_location}>
+                    <span class="mi">{"my_location"}</span>{"Use my location"}
                 </button>
-                <div class="onb-note">{"We only use your location to sort nearby places."}</div>
+                <button class="onb-alt" onclick={pick_spot}>
+                    <span class="mi">{"pin_drop"}</span>{"Pick a spot on the map instead"}
+                </button>
+                <div class="onb-note">
+                    {"Location is optional — we only use it to sort nearby places."}
+                </div>
             </div>
         </div>
     }

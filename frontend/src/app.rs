@@ -21,6 +21,7 @@ use crate::components::edit_user_view::EditUserView;
 use crate::components::filters_sheet::{FiltersFor, FiltersSheet};
 use crate::components::invite_view::InviteView;
 use crate::components::list_view::ListView;
+use crate::components::location_picker::LocationPicker;
 use crate::components::map_view::MapView;
 use crate::components::oauth_complete_view::OauthCompleteView;
 use crate::components::onboarding::Onboarding;
@@ -111,10 +112,32 @@ fn device_id() -> String {
     id
 }
 
+/// The spot the user last pointed to on the map in place of sharing
+/// their location, if any.
+fn stored_spot() -> Option<(f64, f64)> {
+    LocalStorage::get("sb_spot").ok()
+}
+
+/// Records the location opt-in choice for this and future visits.
+fn set_use_location(state: &UseStateHandle<bool>, on: bool) {
+    let _ = LocalStorage::set("sb_use_location", on);
+    state.set(on);
+}
+
 #[function_component(App)]
 pub fn app() -> Html {
     let device = use_memo((), |()| device_id());
     let started = use_state(|| LocalStorage::get::<bool>("sb_started").unwrap_or(false));
+    // Whether the user opted in to browser geolocation. Location is
+    // optional: without it, distances are measured from a spot they point
+    // to on the map (`sb_spot`). Visitors who started before it became
+    // optional already granted it, so they default to on.
+    let use_location = use_state(|| {
+        LocalStorage::get::<bool>("sb_use_location")
+            .unwrap_or_else(|_| LocalStorage::get::<bool>("sb_started").unwrap_or(false))
+    });
+    // Whether the "Set your spot" map picker is open.
+    let picking_spot = use_state(|| false);
     let route = use_route::<Route>().unwrap_or(Route::Map);
     let navigator = use_navigator().expect("BrowserRouter provides a navigator");
     // The nav page rendered behind the place-detail overlay (and the page
@@ -296,27 +319,42 @@ pub fn app() -> Html {
         });
     }
 
-    // Ask for the user's location once the app has started.
+    // Once the app has started, ask for the user's location only if they
+    // opted in; otherwise measure from their picked spot (or the fallback
+    // center). A failed lookup (denied, unavailable) turns the opt-in back
+    // off, which lands in the no-location branch.
     {
         let origin = origin.clone();
         let user_location = user_location.clone();
-        use_effect_with(*started, move |started| {
-            if *started && origin.is_none() {
-                let ok_origin = origin.clone();
-                let ok_user_location = user_location.clone();
+        let use_location = use_location.clone();
+        let show_toast = show_toast.clone();
+        use_effect_with(
+            (*started, *use_location),
+            move |&(started, opted_in)| {
+                if !started {
+                    return;
+                }
+                if !opted_in {
+                    user_location.set(None);
+                    if origin.is_none() {
+                        origin.set(Some(stored_spot().unwrap_or(FALLBACK_CENTER)));
+                    }
+                    return;
+                }
                 let ok = Closure::<dyn FnMut(f64, f64)>::new(move |lat: f64, lng: f64| {
-                    ok_origin.set(Some((lat, lng)));
-                    ok_user_location.set(Some((lat, lng)));
+                    origin.set(Some((lat, lng)));
+                    user_location.set(Some((lat, lng)));
                 });
                 let err = Closure::<dyn FnMut(String)>::new(move |_: String| {
-                    origin.set(Some(FALLBACK_CENTER));
+                    set_use_location(&use_location, false);
+                    show_toast.emit("Couldn't get your location — pick a spot instead".to_owned());
                 });
                 glue::sb_locate(ok.as_ref().unchecked_ref(), err.as_ref().unchecked_ref());
                 // One-shot callbacks: intentionally leaked.
                 ok.forget();
                 err.forget();
-            }
-        });
+            },
+        );
     }
 
     // Load places whenever position, filters, view or data change. The
@@ -401,11 +439,42 @@ pub fn app() -> Html {
         );
     }
 
-    let on_start = {
+    let on_use_location = {
         let started = started.clone();
+        let use_location = use_location.clone();
         Callback::from(move |()| {
+            set_use_location(&use_location, true);
             let _ = LocalStorage::set("sb_started", true);
             started.set(true);
+        })
+    };
+
+    let open_spot_picker = {
+        let picking_spot = picking_spot.clone();
+        Callback::from(move |()| picking_spot.set(true))
+    };
+    let cancel_spot_picker = {
+        let picking_spot = picking_spot.clone();
+        Callback::from(move |()| picking_spot.set(false))
+    };
+    // Measure distances from the picked spot from now on (also finishes
+    // onboarding when picked from there), in place of live geolocation.
+    let confirm_spot = {
+        let started = started.clone();
+        let picking_spot = picking_spot.clone();
+        let origin = origin.clone();
+        let use_location = use_location.clone();
+        let map_focus = map_focus.clone();
+        Callback::from(move |spot: (f64, f64)| {
+            let _ = LocalStorage::set("sb_spot", spot);
+            set_use_location(&use_location, false);
+            origin.set(Some(spot));
+            map_focus.set(None);
+            picking_spot.set(false);
+            if !*started {
+                let _ = LocalStorage::set("sb_started", true);
+                started.set(true);
+            }
         })
     };
 
@@ -700,23 +769,50 @@ pub fn app() -> Html {
         })
     };
 
+    // With location on, fly back to it; otherwise this button is the
+    // opt-in — the location effect then moves the map once it resolves.
     let on_recenter = {
         let origin = origin.clone();
+        let use_location = use_location.clone();
         let selected = selected.clone();
         let map_focus = map_focus.clone();
+        let show_toast = show_toast.clone();
         Callback::from(move |()| {
-            let (lat, lng) = origin.unwrap_or(FALLBACK_CENTER);
-            glue::sb_fly_to(lat, lng, 14.0);
             selected.set(None);
             map_focus.set(None);
+            if *use_location {
+                let (lat, lng) = origin.unwrap_or(FALLBACK_CENTER);
+                glue::sb_fly_to(lat, lng, 14.0);
+            } else {
+                set_use_location(&use_location, true);
+                show_toast.emit("Finding your location…".to_owned());
+            }
         })
+    };
+    let enable_location = {
+        let use_location = use_location.clone();
+        Callback::from(move |()| set_use_location(&use_location, true))
+    };
+
+    let spot_picker = html! {
+        if *picking_spot {
+            <LocationPicker
+                center={origin.or_else(stored_spot).unwrap_or(FALLBACK_CENTER)}
+                initial={stored_spot()}
+                user_location={*user_location}
+                title="Set your spot"
+                subtitle="Tap where you are — nearby places are sorted from there"
+                on_confirm={confirm_spot}
+                on_cancel={cancel_spot_picker}
+            />
+        }
     };
 
     if !*started {
         // A visitor arriving on an invitation link (or bouncing back from
         // the Google OAuth round trip registration can start) gets to
-        // create their account first — the onboarding screen, and its ask
-        // to turn on location, waits until they're done. Every other first
+        // create their account first — the onboarding screen, and its
+        // location choice, waits until they're done. Every other first
         // visit still opens with onboarding.
         let body = match route {
             Route::Register => html! {
@@ -736,11 +832,17 @@ pub fn app() -> Html {
                     on_register_notice={set_register_notice.clone()}
                 />
             },
-            _ => html! { <Onboarding on_start={on_start} /> },
+            _ => html! {
+                <Onboarding
+                    on_use_location={on_use_location}
+                    on_pick_spot={open_spot_picker.clone()}
+                />
+            },
         };
         return html! {
             <div class="app-shell">
                 { body }
+                { spot_picker }
                 if let Some(msg) = (*toast).clone() {
                     <div class="toast"><span class="mi">{"check_circle"}</span>{msg}</div>
                 }
@@ -774,6 +876,7 @@ pub fn app() -> Html {
                             device_id={(*device).clone()}
                             origin={*origin}
                             user_location={*user_location}
+                            on_enable_location={enable_location.clone()}
                             logged_in={auth.is_some()}
                             prefill={(*prefill).clone()}
                             on_prefill_used={on_prefill_used.clone()}
@@ -860,6 +963,7 @@ pub fn app() -> Html {
                             on_open_filters={open_filters.clone()}
                             on_toggle_amenity={on_toggle_amenity.clone()}
                             on_recenter={on_recenter}
+                            on_pick_spot={open_spot_picker.clone()}
                             on_maps_link={on_maps_link}
                             on_bounds_changed={on_bounds_changed}
                             on_toast={show_toast.clone()}
@@ -973,6 +1077,8 @@ pub fn app() -> Html {
                     on_marker_density_change={on_marker_density_change}
                 />
             }
+
+            { spot_picker }
 
             if let Some(msg) = (*toast).clone() {
                 <div class="toast"><span class="mi">{"check_circle"}</span>{msg}</div>
