@@ -5,6 +5,93 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>Coffee Breaks</title>
   <meta name="theme-color" content="#3a2418">
+
+  <script>
+    // ---- Boot rescue ----
+    // If the wasm app hasn't mounted a few seconds after load (stale cached
+    // shell pointing at old hashed files, a startup panic, a script error),
+    // show a visible panel with the collected errors and a button that
+    // unregisters the service worker, clears its caches and reloads. Uses
+    // inline styles so it works even when styles.css failed to load.
+    (function () {
+      const errors = [];
+      window.sbReportError = function (msg) {
+        errors.push(String(msg));
+        if (window.sbRescueShown) render();
+      };
+      window.addEventListener('error', (e) => {
+        if (e.target && e.target !== window && (e.target.src || e.target.href)) {
+          errors.push('Failed to load ' + (e.target.src || e.target.href));
+        } else {
+          errors.push((e.message || 'Script error') +
+            (e.filename ? ' @ ' + e.filename + ':' + e.lineno : ''));
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', (e) => {
+        errors.push('Unhandled rejection: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason));
+      });
+
+      window.sbHardReset = async function () {
+        try {
+          if (navigator.serviceWorker) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map((r) => r.unregister()));
+          }
+          if (window.caches) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((k) => caches.delete(k)));
+          }
+        } catch (_) { /* reload regardless */ }
+        location.replace(location.pathname + '?r=' + Date.now());
+      };
+
+      function mounted() {
+        return Array.from(document.body ? document.body.children : [])
+          .some((el) => el.id !== 'sb-rescue' && el.tagName !== 'SCRIPT');
+      }
+
+      function render() {
+        let box = document.getElementById('sb-rescue');
+        if (!box) {
+          box = document.createElement('div');
+          box.id = 'sb-rescue';
+          box.style.cssText = 'position:fixed;inset:0;z-index:99999;overflow:auto;' +
+            'background:#f6efe4;color:#3a2418;font:15px/1.45 system-ui,sans-serif;' +
+            'padding:max(24px,env(safe-area-inset-top)) 20px 24px';
+          document.body.appendChild(box);
+        }
+        const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+        box.innerHTML =
+          '<h2 style="margin:0 0 8px;font-size:20px">Coffee Breaks didn’t start</h2>' +
+          '<p style="margin:0 0 16px">This usually means an old cached copy of the app is out of date. ' +
+          'Resetting clears the app cache and reloads (you stay signed in).</p>' +
+          '<button id="sb-reset" style="font:inherit;font-weight:700;padding:12px 20px;border:0;' +
+          'border-radius:12px;background:#3a2418;color:#fff;margin-right:8px">Reset &amp; reload</button>' +
+          '<button id="sb-reload" style="font:inherit;padding:12px 20px;border:1px solid #3a2418;' +
+          'border-radius:12px;background:transparent;color:#3a2418">Reload</button>' +
+          '<details style="margin-top:20px"' + (errors.length ? ' open' : '') + '>' +
+          '<summary>Details (' + errors.length + ')</summary>' +
+          '<pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;background:#fff;' +
+          'padding:10px;border-radius:8px">' +
+          esc(['URL: ' + location.href, 'UA: ' + navigator.userAgent,
+               'SW controlled: ' + !!(navigator.serviceWorker && navigator.serviceWorker.controller)]
+               .concat(errors).join('\n')) +
+          '</pre></details>';
+        document.getElementById('sb-reset').onclick = () => window.sbHardReset();
+        document.getElementById('sb-reload').onclick = () => location.reload();
+      }
+
+      window.sbShowRescue = function () {
+        if (!document.body) return;
+        window.sbRescueShown = true;
+        render();
+      };
+
+      window.addEventListener('load', () => {
+        setTimeout(() => { if (!mounted()) window.sbShowRescue(); }, 6000);
+      });
+    })();
+  </script>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icon-192.png">

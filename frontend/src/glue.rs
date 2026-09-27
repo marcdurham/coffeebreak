@@ -75,6 +75,14 @@ extern "C" {
     /// copying the clipboard.
     #[wasm_bindgen(js_name = sbShareInvite)]
     pub fn sb_share_invite(text: &str, code: &str) -> bool;
+
+    /// Records an error for the boot-rescue panel in index.html.
+    #[wasm_bindgen(js_name = sbReportError)]
+    pub fn sb_report_error(msg: &str);
+
+    /// Shows the boot-rescue panel (error details + reset/reload buttons).
+    #[wasm_bindgen(js_name = sbShowRescue)]
+    pub fn sb_show_rescue();
 }
 
 /// Opens a URL in a new tab (directions handoff to Google Maps / OSM).
